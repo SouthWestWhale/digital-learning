@@ -1,0 +1,272 @@
+/* ===== Digital Learning — โครงหน้าและธีมหลัก ===== */
+:root {
+  --bg: #f1f5f9;
+  --panel: #ffffff;
+  --ink: #0f172a;
+  --ink-soft: #475569;
+  --accent: #2563eb;
+  --accent-soft: #dbeafe;
+  --green: #22c55e;
+  --amber: #f59e0b;
+  --side-bg: #0f172a;
+  --side-ink: #cbd5e1;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(15, 23, 42, .12);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Leelawadee UI", "Segoe UI", Tahoma, "Sarabun", sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+/* ---- แถบบน ---- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  background: var(--side-bg);
+  color: #fff;
+}
+.menu-btn {
+  display: none;
+  background: none;
+  border: 1px solid #334155;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 20px;
+  width: 40px;
+  height: 36px;
+  cursor: pointer;
+}
+.brand {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 18px;
+}
+.brand-sub { color: #94a3b8; font-size: 13px; }
+
+/* ---- โครง sidebar + main ---- */
+.layout { display: flex; }
+.sidebar {
+  width: 280px;
+  min-width: 280px;
+  min-height: calc(100vh - 57px);
+  background: var(--side-bg);
+  color: var(--side-ink);
+  padding: 14px 10px 40px;
+}
+.content {
+  flex: 1;
+  min-width: 0;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 26px 22px 80px;
+}
+
+/* ---- sidebar ---- */
+.side-group { margin-bottom: 6px; }
+.side-group h3 {
+  margin: 16px 8px 4px;
+  font-size: 12.5px;
+  letter-spacing: .4px;
+  color: #7dd3fc;
+  text-transform: uppercase;
+}
+.side-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  color: var(--side-ink);
+  text-decoration: none;
+  font-size: 14.5px;
+}
+.side-link:hover { background: #1e293b; }
+.side-link.active { background: var(--accent); color: #fff; }
+.side-link .done { color: var(--green); font-weight: 700; }
+.side-link.active .done { color: #bbf7d0; }
+.side-num {
+  color: #64748b;
+  font-size: 12px;
+  min-width: 20px;
+  text-align: right;
+}
+.side-link.active .side-num { color: #bfdbfe; }
+
+/* ---- เนื้อหาบทเรียน ---- */
+.lesson-head h1 {
+  margin: 0 0 4px;
+  font-size: 28px;
+}
+.lesson-head .lesson-sub { color: var(--ink-soft); margin: 0 0 18px; }
+.lesson-body h2 {
+  margin-top: 30px;
+  font-size: 21px;
+  border-bottom: 2px solid var(--accent-soft);
+  padding-bottom: 4px;
+}
+.lesson-body code {
+  background: #e2e8f0;
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-size: 14px;
+}
+.lesson-body img { max-width: 100%; }
+
+.note {
+  background: #eff6ff;
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 14px 0;
+}
+.warn {
+  background: #fffbeb;
+  border-left: 4px solid var(--amber);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 14px 0;
+}
+
+/* ---- กล่องสรุปสำหรับสอบ ---- */
+.summary-box {
+  background: #fefce8;
+  border: 1.5px solid #fde047;
+  border-left: 6px solid var(--amber);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin: 26px 0;
+  box-shadow: var(--shadow);
+}
+.summary-box h3 { margin: 0 0 10px; font-size: 18px; }
+
+/* ---- ตาราง truth table ---- */
+table.tt {
+  border-collapse: collapse;
+  margin: 12px 0;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  border-radius: 8px;
+  overflow: hidden;
+}
+table.tt th, table.tt td {
+  border: 1px solid #e2e8f0;
+  padding: 6px 14px;
+  text-align: center;
+  font-size: 14.5px;
+}
+table.tt th { background: var(--accent-soft); font-weight: 700; }
+table.tt tr:nth-child(even) td { background: #f8fafc; }
+table.tt td.hl, table.tt tr.hl td {
+  background: #dcfce7;
+  font-weight: 700;
+}
+
+/* ---- ปุ่มทั่วไป ---- */
+.btn {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  padding: 8px 16px;
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.btn:hover { filter: brightness(1.1); }
+.btn.ghost {
+  background: var(--panel);
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+}
+.btn.done-btn.is-done {
+  background: var(--green);
+  border-color: var(--green);
+  color: #052e16;
+}
+
+/* ---- ปุ่มก่อน/ถัดไป ---- */
+.pager {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 34px;
+}
+.pager a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+.pager a.prev::before { content: "← "; }
+.pager a.next::after { content: " →"; }
+
+/* ---- หน้าแรก ---- */
+.home-hero {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb 55%, #38bdf8);
+  color: #fff;
+  border-radius: 16px;
+  padding: 26px 26px 22px;
+  margin-bottom: 26px;
+}
+.home-hero h1 { margin: 0 0 8px; font-size: 30px; }
+.home-hero p { margin: 0; color: #dbeafe; }
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+.home-card {
+  display: block;
+  background: var(--panel);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+  text-decoration: none;
+  color: var(--ink);
+  border: 1.5px solid transparent;
+}
+.home-card:hover { border-color: var(--accent); }
+.home-card .hc-group {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.home-card h4 { margin: 4px 0 6px; font-size: 17px; }
+.home-card p { margin: 0; color: var(--ink-soft); font-size: 14px; }
+
+/* ---- การ์ด PDF ---- */
+.doc-card {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  background: var(--panel);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+  margin: 12px 0;
+}
+.doc-card .doc-icon { font-size: 34px; }
+.doc-card h4 { margin: 0 0 2px; }
+.doc-card p { margin: 0 0 6px; color: var(--ink-soft); font-size: 14px; }
+.doc-card .doc-link {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 14px;
+}
+.doc-card .doc-link:hover { text-decoration: underline; }

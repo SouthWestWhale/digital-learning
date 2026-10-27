@@ -1,0 +1,33 @@
+/* ===== Digital Learning — responsive (จอแคบ) ===== */
+
+@media (max-width: 900px) {
+  .menu-btn { display: inline-block; }
+  .brand-sub { display: none; }
+
+  .sidebar {
+    position: fixed;
+    z-index: 40;
+    top: 0;
+    left: -300px;
+    width: 280px;
+    min-height: 100vh;
+    padding-top: 60px;
+    transition: left .25s ease;
+    box-shadow: 4px 0 18px rgba(0, 0, 0, .35);
+  }
+  .sidebar.open { left: 0; }
+
+  .scrim {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    background: rgba(0, 0, 0, .45);
+  }
+  .scrim.show { display: block; }
+
+  .content { padding: 18px 14px 70px; }
+  .lesson-head h1 { font-size: 23px; }
+  .home-hero { padding: 18px 16px; }
+  .home-hero h1 { font-size: 24px; }
+}

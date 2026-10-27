@@ -1,0 +1,174 @@
+/* ===== Digital Learning — สไตล์วงจร SVG ===== */
+
+/* กรอบวงจร */
+.circuit-panel {
+  background: var(--panel);
+  border: 1.5px solid #e2e8f0;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin: 20px 0;
+  overflow: hidden;
+}
+.circuit-title {
+  background: var(--accent-soft);
+  padding: 8px 16px;
+  font-weight: 700;
+  font-size: 15.5px;
+  color: #1e40af;
+}
+.circuit-scroll {
+  overflow-x: auto;
+  padding: 6px 8px 2px;
+}
+.circuit-scroll svg {
+  display: block;
+  width: 100%;
+  min-width: 340px;
+  height: auto;
+  user-select: none;
+}
+.circuit-scroll svg.wide { min-width: 700px; }
+
+/* ปุ่มควบคุมใต้วงจร */
+.circuit-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+}
+.circuit-controls .ctrl-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ctrl-label { font-size: 13.5px; color: var(--ink-soft); }
+
+/* สวิตช์ input */
+.sw-btn {
+  min-width: 64px;
+  border-radius: 9px;
+  border: 2px solid #94a3b8;
+  background: #f1f5f9;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 700;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.sw-btn.on {
+  border-color: var(--green);
+  background: #dcfce7;
+  color: #14532d;
+}
+
+/* ปุ่ม pulse clock */
+.clk-btn {
+  border-radius: 9px;
+  border: 2px solid #7c3aed;
+  background: #ede9fe;
+  color: #4c1d95;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 14.5px;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+.clk-btn:active { transform: scale(.97); }
+
+/* ปุ่มรีเซ็ต */
+.reset-btn {
+  border-radius: 9px;
+  border: 2px solid #94a3b8;
+  background: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+/* กล่องคำอธิบายทีละขั้น */
+.explain-box {
+  border-top: 1.5px solid #e2e8f0;
+  padding: 10px 14px 14px;
+  background: #f8fafc;
+}
+.explain-box .ex-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+.explain-box .ex-text {
+  background: #fff;
+  border-left: 4px solid var(--accent);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14.5px;
+  min-height: 38px;
+}
+.explain-box .ex-text.warn { border-left-color: var(--amber); background: #fffbeb; }
+
+/* ---------- สีเส้นสายไฟใน SVG ---------- */
+.wire { fill: none; stroke-width: 3; stroke-linecap: round; }
+.wire.w0 { stroke: #94a3b8; }        /* logic 0 — เทา */
+.wire.w1 { stroke: #16a34a; }        /* logic 1 — เขียว */
+.wire.wq { stroke: var(--amber); stroke-dasharray: 7 5; }  /* สถานะต้องห้าม ? */
+
+/* จุดต่อสาย */
+.junction { fill: #16a34a; }
+.junction.j0 { fill: #94a3b8; }
+
+/* ---------- ชิ้นส่วนวงจร ---------- */
+.comp-body {
+  fill: #ffffff;
+  stroke: #0f172a;
+  stroke-width: 2.2;
+}
+.comp-label {
+  font-family: "Segoe UI", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  fill: #0f172a;
+  text-anchor: middle;
+  user-select: none;
+}
+.comp-pin-label {
+  font-family: "Segoe UI", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  fill: #334155;
+  text-anchor: middle;
+  user-select: none;
+}
+.pin-dot { fill: #0f172a; }
+
+/* สวิตช์ใน SVG — กดได้ */
+.svg-switch { cursor: pointer; }
+.svg-switch .sw-hit { fill: transparent; cursor: pointer; }
+.svg-switch .sw-body-0 { fill: #e2e8f0; stroke: #475569; stroke-width: 2; }
+.svg-switch .sw-body-1 { fill: #dcfce7; stroke: #16a34a; stroke-width: 2; }
+.svg-switch text {
+  font-family: "Segoe UI", sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  text-anchor: middle;
+  user-select: none;
+}
+.svg-switch .sw-text-0 { fill: #475569; }
+.svg-switch .sw-text-1 { fill: #14532d; }
+
+/* LED ไฟส่อง */
+.led-glow-on  { filter: drop-shadow(0 0 6px rgba(34, 197, 94, .9)); }
+.led-glow-red { filter: drop-shadow(0 0 6px rgba(239, 68, 68, .9)); }
+
+/* 7-segment */
+.seg-on  { fill: #ef4444; }
+.seg-off { fill: #fee2e2; }
+
+/* state table ใน lesson */
+.state-table-wrap { margin: 14px 0; }
