@@ -26,14 +26,16 @@
 
   /* ---------- จัดการวงจรที่กำลังเปิดอยู่ (กัน interval leak) ---------- */
   var activeSims = [];
+  DL._activeSims = activeSims;   // hook สำหรับตรวจสอบ leak ใน test
+  DL._destroyCount = 0;          // จำนวน panel ที่โดน destroy สะสม (hook test)
   DL.registerActiveSim = function (sim) {
     activeSims.push(sim);
   };
   function destroyActiveSims() {
     for (var i = 0; i < activeSims.length; i++) {
-      try { activeSims[i].destroy(); } catch (e) { /* เงียบ */ }
+      try { activeSims[i].destroy(); DL._destroyCount++; } catch (e) { /* เงียบ */ }
     }
-    activeSims = [];
+    activeSims.length = 0;   // เคลียร์ใน array เดิม (คง reference เดิมของ DL._activeSims ไว้)
   }
 
   /* ---------- helpers ---------- */

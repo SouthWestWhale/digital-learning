@@ -52,9 +52,19 @@
 
     var clkGroup = el('div', 'ctrl-group');
     var autoTimer = null;
-    function clearAuto() {
+    var autoChk = null, speed = null, speedLab = null;
+
+    // เคลียร์ interval — uncheck=true ใช้ตอนทำลาย/รีเซ็ต (ปิดโหมดอัตโนมัติจริง)
+    function clearAuto(uncheck) {
       if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
-      autoChk.checked = false;
+      if (uncheck && autoChk) autoChk.checked = false;
+    }
+    function startAuto() {
+      var hz = Number(speed.value) * 0.5;   // 1–8 → 0.5–4 Hz
+      autoTimer = setInterval(function () {
+        sim.clockEdge();
+        syncAll();
+      }, Math.round(1000 / hz));
     }
 
     if (sim.hasClock()) {
@@ -65,7 +75,7 @@
       });
       clkGroup.appendChild(pulse);
 
-      var autoChk = el('input');
+      autoChk = el('input');
       autoChk.type = 'checkbox';
       autoChk.id = 'auto-' + Math.floor(Math.random() * 1e9);
       var autoLab = el('label', 'ctrl-label', 'เดินอัตโนมัติ');
@@ -73,36 +83,25 @@
       clkGroup.appendChild(autoChk);
       clkGroup.appendChild(autoLab);
 
-      var speed = el('input');
+      speed = el('input');
       speed.type = 'range'; speed.min = '1'; speed.max = '8'; speed.value = '3';
       speed.title = 'ความเร็ว';
       clkGroup.appendChild(speed);
-      var speedLab = el('span', 'ctrl-label', 'เร็ว 3');
+      speedLab = el('span', 'ctrl-label', 'เร็ว 3');
       clkGroup.appendChild(speedLab);
 
       autoChk.addEventListener('change', function () {
-        clearAuto();            // เคลียร์ก่อนเสมอ
-        if (autoChk.checked) {
-          var hz = Number(speed.value) * 0.5;   // 1–8 → 0.5–4 Hz
-          autoTimer = setInterval(function () {
-            sim.clockEdge(); syncAll();
-          }, Math.round(1000 / hz));
-        }
+        clearAuto(false);                       // เคลียร์ interval เก่า (คงสถานะเช็คไว้)
+        if (autoChk.checked) startAuto();
       });
       speed.addEventListener('input', function () {
         speedLab.textContent = 'เร็ว ' + speed.value;
-        if (autoTimer) {
-          clearInterval(autoTimer);
-          var hz = Number(speed.value) * 0.5;
-          autoTimer = setInterval(function () {
-            sim.clockEdge(); syncAll();
-          }, Math.round(1000 / hz));
-        }
+        if (autoTimer) { clearAuto(false); startAuto(); }   // เปลี่ยนความเร็วระหว่างเดิน
       });
 
       var reset = el('button', 'reset-btn', '↺ รีเซ็ต');
       reset.addEventListener('click', function () {
-        clearAuto();
+        clearAuto(true);                        // รีเซ็ต = ปิดเดินอัตโนมัติด้วย
         if (sim.reset) sim.reset();
         syncAll();
       });
@@ -145,8 +144,11 @@
     panel.destroy = function () {
       if (destroyed) return;
       destroyed = true;
-      clearAuto();
+      panel.destroyed = true;
+      clearAuto(true);
     };
+    // app.js จะเรียก destroy ตอนเปลี่ยนหน้า — กัน interval ของโหมดเดินอัตโนมัติค้าง
+    if (DL.registerActiveSim) DL.registerActiveSim(panel);
 
     syncAll();
     return panel;

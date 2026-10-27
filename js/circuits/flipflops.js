@@ -16,8 +16,8 @@
     html:
       '<h2>จาก gate สู่ความจำ</h2>' +
       '<p>ทุกวงจรที่ผ่านมาลืมค่าทันทีที่ input เปลี่ยน (combinational) — ถ้าต่อ gate 2 ตัว <b>ไขว้กลับกัน</b> ' +
-      '(output ของตัวหนึ่งเข้า input อีกตัว) มันจะ <b>จำค่าไว้ได้</b> วงจรง่ายสุดคือ SR latch ทำจาก NAND 2 ตัว:</p>' +
-      '<pre style="background:#e2e8f0;border-radius:8px;padding:10px 14px">S ──[NAND]──┬──→ Q\n        └───┼──\n            │  │(ไขว้กลับ)\n            ├──┘\nR ──[NAND]──┴──→ Q̄</pre>' +
+      '(output ของตัวหนึ่งเข้า input อีกตัว) มันจะ <b>จำค่าไว้ได้</b> วงจรง่ายสุดคือ SR latch ทำจาก NOR 2 ตัว:</p>' +
+      '<pre style="background:#e2e8f0;border-radius:8px;padding:10px 14px">S ──[NOR]──┬──→ Q\n        └───┼──\n            │  │(ไขว้กลับ)\n            ├──┘\nR ──[NOR]──┴──→ Q̄</pre>' +
       '<p>พฤติกรรม (S=1 เรียกว่า set — ตั้ง Q เป็น 1 / R=1 เรียกว่า reset — ล้างเป็น 0):</p>' +
       '<table class="tt"><tr><th>S</th><th>R</th><th>Q</th><th>เรียกว่า</th></tr>' +
       '<tr><td>0</td><td>0</td><td>คงเดิม</td><td>Hold — จำค่าไว้ (นี่คือ "หน่วยความจำ"!)</td></tr>' +
@@ -35,7 +35,8 @@
       '<p>SR flip-flop คือ latch ที่ใส่ประตู clock ครอบไว้ — กด Pulse Clock ในวงจรที่สองเทียบกับ latch ตัวแรกดู</p>',
     summary:
       '<ul>' +
-      '<li>SR latch = NAND 2 ตัวไขว้ → <b>จำ 1 บิต</b> (S=1 → Q=1, R=1 → Q=0, S=R=0 → จำเดิม)</li>' +
+      '<li>SR latch = <b>NOR 2 ตัวไขว้</b> (S,R active-high) → จำ 1 บิต (S=1 → Q=1, R=1 → Q=0, S=R=0 → จำเดิม)</li>' +
+      '<li>แบบ NAND 2 ตัวก็มี แต่ input เป็น active-low (S̅,R̅) ตรงข้าม — ข้อสอบระวังอ่านชื่อให้ดี</li>' +
       '<li>S=R=1 คือ <b>สถานะต้องห้าม</b> ห้ามใช้ในข้อสอบและวงจรจริง</li>' +
       '<li>Latch ตอบสนองระดับ (level), Flip-Flop ตอบสนองขอบ (edge) — ทุก FF ต่อจากนี้เป็น edge-triggered</li>' +
       '</ul>',

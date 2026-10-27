@@ -5,6 +5,7 @@
 
 global.window = {};
 require('../js/engine/sim.js');
+require('../js/engine/ff.js');
 var DL = global.window.DL;
 
 var pass = 0, fail = 0, names = [];
@@ -161,6 +162,53 @@ s10.explain('ทดสอบข้อความไทย');
 ok('explain เก็บข้อความไว้ใน lastEvent', s10.lastEvent && s10.lastEvent.text === 'ทดสอบข้อความไทย');
 s10.explain('เตือน', true);
 ok('explain รับ flag warn', s10.lastEvent && s10.lastEvent.warn === true);
+
+/* ---------- guard: clockFrom ต้องชี้ FF ต้นทางที่ประกาศ "ก่อน" ตัวเอง ---------- */
+var s11 = new DL.CircuitSim();
+s11.addComponent('bFF', 'DFF', { x: 0, y: 0, clockFrom: 'aFF' });
+s11.addComponent('aFF', 'DFF', { x: 0, y: 0 });
+threw = false;
+try { s11.clockEdge(); }
+catch (e) { threw = /ลำดับ|order|ก่อน/.test(e.message); }
+ok('clockFrom ชี้ FF ที่ประกาศทีหลังตัวเอง → throw บอกลำดับ', threw);
+
+/* ---------- guard: ทิศทางสาย wire ต้องถูกต้อง (ออกจาก output → เข้า input) ---------- */
+var s12 = new DL.CircuitSim();
+s12.addInput('ia', { x: 0, y: 0, label: 'A' });
+s12.addInput('ib', { x: 0, y: 40, label: 'B' });
+threw = false;
+try { s12.wire('ia', 'out', 'ib', 'out'); }
+catch (e) { threw = true; }
+ok('wire จาก output ยิงเข้า node ที่ไม่มี input pin → throw', threw);
+
+var s13 = new DL.CircuitSim();
+s13.addInput('ia', { x: 0, y: 0, label: 'A' });
+s13.addGate('g', 'AND', { x: 60, y: 0 });
+threw = false;
+try { s13.wire('g', 'out', 'ia', 'zz'); }
+catch (e) { threw = true; }
+ok('wire เข้า pin ชื่อผิดของ input node → throw', threw);
+
+var s14 = new DL.CircuitSim();
+s14.addInput('ia', { x: 0, y: 0, label: 'A' });
+s14.addComponent('c', 'PASS2', { x: 0, y: 0 });
+threw = false;
+try { s14.wire('c', 'y', 'ia', 'in'); }
+catch (e) { threw = true; }
+ok('wire จาก node ปลายทาง (output/LED) กลับออก → throw', threw);
+
+var s15 = new DL.CircuitSim();
+s15.addInput('ia', { x: 0, y: 0, label: 'A' });
+s15.addComponent('c', 'PASS2', { x: 0, y: 0 });
+s15.addOutput('o', { x: 0, y: 0, label: 'o' });
+threw = false;
+try {
+  s15.wire('ia', 'out', 'c', 'p');
+  s15.wire('ia', 'out', 'c', 'q');
+  s15.wire('c', 'y', 'o', 'in');
+  s15.setInput('ia', 1);
+} catch (e) { threw = true; }
+ok('wire ทิศถูกต้อง (input→comp→LED) ยังใช้ได้ปกติ', !threw && s15.outputValue('o') === 1);
 
 /* ---------- สรุป ---------- */
 console.log('ผลทดสอบ sim.test.js: ' + pass + ' ผ่าน, ' + fail + ' พลาด');

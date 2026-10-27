@@ -86,12 +86,33 @@
     return node;
   };
 
-  /* ---------- สายไฟ ---------- */
+  /* ---------- สายไฟ (ตรวจทิศทาง: ต้องออกจากขา output → เข้าขา input เท่านั้น) ---------- */
+  function hasOutPin(n, pin) {
+    if (n.kind === 'input' || n.kind === 'gate') return pin === 'out';
+    if (n.kind === 'comp') return n.def.outputs.indexOf(String(pin)) >= 0;
+    return false;   // node ปลายทาง (LED) ไม่มีขาออก
+  }
+  function hasInPin(n, pin) {
+    if (n.kind === 'output') return pin === 'in';
+    if (n.kind === 'gate') {
+      var i = Number(pin);
+      return !isNaN(i) && i >= 0 && i < n.n;
+    }
+    if (n.kind === 'comp') return n.def.inputs.indexOf(String(pin)) >= 0;
+    return false;   // node ต้นทาง (สวิตช์) ไม่มีขาเข้า
+  }
+
   CircuitSim.prototype.wire = function (fromId, fromPin, toId, toPin, waypoints) {
     var from = this.nodes[fromId];
     var to = this.nodes[toId];
     if (!from) throw new Error('wire: ไม่พบ node ต้นทาง "' + fromId + '"');
     if (!to) throw new Error('wire: ไม่พบ node ปลายทาง "' + toId + '"');
+    if (!hasOutPin(from, fromPin)) {
+      throw new Error('wire: "' + fromId + '" (' + from.kind + ') ไม่มี output pin "' + fromPin + '"');
+    }
+    if (!hasInPin(to, toPin)) {
+      throw new Error('wire: "' + toId + '" (' + to.kind + ') ไม่มี input pin "' + toPin + '"');
+    }
     // ห้ามสองสายยึด input pin เดียวกัน
     for (var i = 0; i < this.wires.length; i++) {
       var w = this.wires[i];
@@ -329,6 +350,18 @@
    */
   CircuitSim.prototype.clockEdge = function () {
     var sim = this;
+    // guard: FF ripple ต้องประกาศ "หลัง" FF ต้นทาง เพราะ edge loop เดินตามลำดับประกาศ
+    // (ผิดลำดับ = ยิงช้าไปหนึ่ง pulse โดยไม่มีสัญญาณเตือน)
+    var orderIdx = this.order;
+    this.order.forEach(function (id) {
+      var n = sim.nodes[id];
+      if (n.kind !== 'comp' || n.opts.clockFrom === undefined) return;
+      var srcId = String(n.opts.clockFrom).split(':')[0];
+      if (orderIdx.indexOf(srcId) > orderIdx.indexOf(id)) {
+        throw new Error('ลำดับประกาศผิด: "' + id + '" ใช้ clockFrom "' + srcId +
+                        '" ที่ประกาศทีหลัง — ต้องประกาศ FF ต้นทางก่อนเสมอ');
+      }
+    });
     this.evaluate();   // รีเฟรชค่า D/J/K/T/S/R รอบ FF
 
     var msgs = [];
