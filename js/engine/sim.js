@@ -28,8 +28,8 @@
   var COMPONENTS = {};
   DL.registerComponent = function (kind, def) {
     if (!def || !Array.isArray(def.inputs) || !Array.isArray(def.outputs) ||
-        typeof def.eval !== 'function') {
-      throw new Error('registerComponent(' + kind + '): ต้องมี inputs[], outputs[], eval()');
+        (typeof def.eval !== 'function' && typeof def.evalNode !== 'function')) {
+      throw new Error('registerComponent(' + kind + '): ต้องมี inputs[], outputs[] และ eval() หรือ evalNode()');
     }
     COMPONENTS[kind] = def;
   };
@@ -79,9 +79,11 @@
     if (!def) {
       throw new Error('component ไม่รู้จักชนิด "' + kind + '" — ต้อง DL.registerComponent ก่อน');
     }
-    return this._add({ kind: 'comp', id: id, comp: kind, def: def,
-                       x: opts.x || 0, y: opts.y || 0, opts: opts,
-                       ins: {}, out: {} });
+    var node = this._add({ kind: 'comp', id: id, comp: kind, def: def,
+                           x: opts.x || 0, y: opts.y || 0, opts: opts,
+                           ins: {}, out: {} });
+    if (def.initNode) def.initNode(node);   // FF/latch: สร้าง state เริ่มต้น
+    return node;
   };
 
   /* ---------- สายไฟ ---------- */
@@ -230,7 +232,9 @@
       if (hasQ(vals)) return '?';
       return GATES[node.type](vals);
     }
-    // comp — customEval มาก่อน; ถ้ามี input เป็น '?' กระจาย '?' ทุก output
+    // comp — def.evalNode (stateful: latch/FF อ่าน-เขียน node.state) มาก่อน customEval;
+    // ถ้ามี input เป็น '?' กระจาย '?' ทุก output
+    if (node.def.evalNode) return node.def.evalNode(node, vals);
     if (node.customEval) return node.customEval(vals);
     var names = Object.keys(vals);
     var bad = false;
@@ -252,6 +256,7 @@
     order.forEach(function (id) {
       var node = sim.nodes[id];
       var vals = pinValues(sim, node);
+      node.ins = vals;   // เก็บค่า input ปัจจุบันไว้ที่ node (clockEdge อ่านตอน edge)
       var out = evalNode(sim, node, vals);
       if (node.kind === 'input') node.out = out;
       else if (node.kind === 'output') node.ins = out;
@@ -289,6 +294,74 @@
       var n = sim.nodes[id];
       return n.kind === 'comp' && (n.comp === 'CLOCK' || /FF/.test(n.comp) || !!n.opts.needClock);
     });
+  };
+
+  /* ---------- clock: ขอบขึ้นต่อการเรียก 1 ครั้ง ----------
+   * FF แบบ primary (opts.clocked) — ทุก clockEdge() คือ 1 ขอบขั้น
+   * FF แบบ ripple (opts.clockFrom = 'ffId' หรือ 'ffId:qn') — ยิงเมื่อค่า clock
+   *   ต้นทาง "ขอบขึ้น" (0→1) ณ ตอนที่ถึงคิวของตัวเอง (ประมวลผลตามลำดับประกาศ
+   *   จึงเหมือน ripple จริงที่ค่อยๆ ไหลทีละตัว)
+   * ห้าม evaluate Q ใหม่ระหว่าง propagate — Q เปลี่ยนเฉพาะที่นี่เท่านั้น
+   */
+  CircuitSim.prototype.clockEdge = function () {
+    var sim = this;
+    this.evaluate();   // รีเฟรชค่า D/J/K/T/S/R รอบ FF
+
+    var msgs = [];
+    this.order.forEach(function (id) {
+      var n = sim.nodes[id];
+      if (n.kind !== 'comp' || !n.def.isFF) return;
+
+      var edge = false;
+      var primary = (n.opts.clocked !== undefined)
+        ? n.opts.clocked
+        : (n.def.inputs.indexOf('clk') >= 0);   // FF ที่มี pin clk = primary โดยดีฟอลต์
+      if (n.opts.clockFrom !== undefined) primary = false;  // ripple — ขับด้วย FF ตัวอื่น
+      if (primary) {
+        edge = true;
+      } else if (n.opts.clockFrom !== undefined) {
+        var parts = String(n.opts.clockFrom).split(':');
+        var src = sim.nodes[parts[0]];
+        if (!src || src.kind !== 'comp' || !src.def.isFF) {
+          throw new Error('clockFrom ต้องชี้ไปที่ flip-flop: ' + n.opts.clockFrom);
+        }
+        var clkVal = parts[1] === 'qn' ? src.state.qn : src.state.q;
+        if (n._prevClk === undefined) {
+          n._prevClk = clkVal;          // จับค่าเริ่มต้นไว้ก่อน — ไม่ยิง edge ครั้งแรก
+        } else {
+          edge = (n._prevClk === 0 && clkVal === 1);
+          n._prevClk = clkVal;
+        }
+      }
+      if (!edge) return;
+
+      var before = n.state.q;
+      var after = n.def.edge(n.state, n.ins, n);
+      n.state.q = after;
+      n.state.qn = (after === '?') ? '?' : (after ? 0 : 1);
+      msgs.push(n.def.explain ? n.def.explain(n, before, after)
+                              : (id + ': Q ' + before + '→' + after));
+    });
+
+    this.evaluate();   // propagate Q ใหม่ไปทั้งวงจร
+    this.explain(msgs.length ? msgs.join(' | ') : 'CLK ▲ — ทุก flip-flop คงค่าเดิม (hold)');
+    this._fire();
+  };
+
+  /* ---------- รีเซ็ต FF ทุกตัวกลับ Q=0 ---------- */
+  CircuitSim.prototype.reset = function () {
+    var sim = this;
+    this.order.forEach(function (id) {
+      var n = sim.nodes[id];
+      if (n.kind === 'comp' && n.def.isFF) {
+        n.state.q = (n.def.initQ !== undefined) ? n.def.initQ : 0;
+        n.state.qn = n.state.q ? 0 : 1;
+        n._prevClk = undefined;
+      }
+    });
+    this.evaluate();
+    this.explain('รีเซ็ต — flip-flop ทุกตัวกลับสู่ Q = 0');
+    this._fire();
   };
 
   DL.CircuitSim = CircuitSim;
