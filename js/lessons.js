@@ -36,17 +36,4 @@
     return gid;
   };
 
-  // บท placeholder — ใช้พิสูจน์ router ตอน M0 (จะถูกแทนที่ด้วยบทจริงใน M1)
-  DL.registerLesson({
-    id: 'demo',
-    group: 'basics',
-    title: '(บทตัวอย่าง — กำลังสร้าง)',
-    subtitle: 'ใช้ทดสอบว่า sidebar และ router ทำงานได้',
-    html:
-      '<h2>บทนี้ยังไม่มีเนื้อหา</h2>' +
-      '<p>เป็นบท placeholder สำหรับทดสอบโครงเว็บ ถ้าคุณเห็นข้อความนี้แปลว่า ' +
-      'เว็บโหลดได้ ภาษาไทยไม่เพี้ยน และ router เปลี่ยนหน้าได้แล้ว 🎉</p>',
-    summary: '<p>placeholder — ไม่มีสรุป</p>',
-    circuits: []
-  });
 })();
