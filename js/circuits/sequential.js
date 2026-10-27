@@ -10,7 +10,7 @@
     group: 'sequential',
     title: 'Sequential Circuit — วงจรที่จำอดีต',
     subtitle: 'สไลด์บท 7.1 · วิเคราะห์วงจร sequential ที่ D = f(Q, X) — สมการ, ตาราง characteristic และ excitation',
-    slide: 'docs/07_1_rev03 (Sequential).pdf',
+    slide: '07_1_rev03 (Sequential).pdf',
     html:
       '<h2>Combinational vs Sequential</h2>' +
       '<p>วงจร combinational (บท 1–9) "ลืมทุกอย่าง" — output ขึ้นกับ input ปัจจุบันอย่างเดียว ' +
@@ -74,7 +74,7 @@
     group: 'sequential',
     title: 'Synchronous Sequential — ออกแบบเครื่องจักรสถานะ',
     subtitle: 'สไลด์บท 7.2 · ออกแบบวงจร FF หลายตัวที่เดินพร้อมกันตาม state table ที่กำหนด',
-    slide: 'docs/07_2_rev03 (Synchronous).pdf',
+    slide: '07_2_rev03 (Synchronous).pdf',
     html:
       '<h2>Synchronous คืออะไร?</h2>' +
       '<p>เมื่อใช้ FF หลายตัว ถ้าแต่ละตัวเดินตามจังหวะของตัวเอง state จะพลาดง่าย ' +

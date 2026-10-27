@@ -245,7 +245,7 @@
     group: 'course',
     title: 'Counter — ตัวนับ 4 บิต & Decade',
     subtitle: 'สไลด์บท 8 · ต่อ T-FF โยงกันได้ตัวนับ — แบบ async (ripple) และ decade (mod-10)',
-    slide: 'docs/08 Counter.pdf',
+    slide: '08 Counter.pdf',
     html:
       '<h2>จาก T-FF สู่ตัวนับ</h2>' +
       '<p>บทที่ 13 เราเห็นว่า T-FF หารความถี่ 2 ถ้าเอา <b>Q ของ FF ตัวหน้า</b> ไปเป็น clock ของตัวถัดไป ' +
@@ -325,7 +325,7 @@
     group: 'course',
     title: 'Register & Memory — จาก 1 บิต สู่ 1 ไบต์',
     subtitle: 'สไลด์บท 9 · Shift register เลื่อนบิต และ RAM เขียน/อ่านด้วย address',
-    slide: 'docs/09 Register and Memory.pdf',
+    slide: '09 Register and Memory.pdf',
     html:
       '<h2>Register — FF หลายตัวมือถือม้วนเดียวกัน</h2>' +
       '<p>เอา D-FF มา 4 ตัว <b>ใช้ CLK สายเดียวกัน</b> (synchronous พอดีบทที่ 15) จะได้ register เก็บ 4 บิตพร้อมกัน ' +
@@ -397,7 +397,7 @@
     group: 'course',
     title: 'Multivibrator — 555 และเพื่อนนิวเคลียร์สามตระกูล',
     subtitle: 'สไลด์บท 10 · Bistable / Monostable / Astable — วงจรจำ, วงจรยิงครั้งเดียว, วงจรกะพริบ',
-    slide: 'docs/10 Multivibrator_rev03.pdf',
+    slide: '10 Multivibrator_rev03.pdf',
     html:
       '<h2>Multivibrator คืออะไร?</h2>' +
       '<p>ตระกูลวงจร 2 สถานะ (ติด/ดับ) ที่เกิดจากการ feedback แบบ RC+gate หรือ 555 IC แบ่งตาม "ความนิ่ง" 3 แบบ:</p>' +
@@ -445,7 +445,7 @@
     group: 'course',
     title: 'ADC & DAC — โลก analog เชื่อมดิจิทัล',
     subtitle: 'สไลด์บท 11 · R-2R DAC แปลงบิตเป็นแรงดัน และ SAR ADC ทายค่าทีละบิต',
-    slide: 'docs/11 ADC-DAC_rev03.pdf',
+    slide: '11 ADC-DAC_rev03.pdf',
     html:
       '<h2>ทำไมต้องแปลง?</h2>' +
       '<p>เสียง อุณหภูมิ แสง แรงดัน คือ analog (ต่อเนื่อง) แต่ CPU กินเลขฐานสอง การเชื่อมสองโลกต้องมี:</p>' +
@@ -516,7 +516,7 @@
     group: 'course',
     title: 'Computer — รวมทุกอย่างเป็นคอมพิวเตอร์',
     subtitle: 'สไลด์บท 12 · fetch-execute cycle: PC, IR, ACC และหน่วยความจำทำงานร่วมกันยังไง',
-    slide: 'docs/12 Computer.pdf',
+    slide: '12 Computer.pdf',
     html:
       '<h2>คอมพิวเตอร์ = วงจรที่เรียนมาทั้งหมด ประกอบกัน</h2>' +
       '<ul>' +
