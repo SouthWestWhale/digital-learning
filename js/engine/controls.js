@@ -137,6 +137,7 @@
     }
     sim.onChange(syncAll);
 
+    sim.evaluate();   // คำนวณรอบแรกก่อนวาด — สายไฟ/LED/ตารางโชว์ค่าเริ่มต้นถูกต้อง
     DL.Render.mount(sim, svg, { wide: spec.wide });
 
     /* ---------- destroy: เคลียร์ interval ---------- */

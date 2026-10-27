@@ -14,6 +14,10 @@
 
   function isHigh(x) { return x === 1; }
 
+  // แชร์รูปทรง block FF ให้ component อื่น (astable/mono ใน course.js) ใช้ต่อ
+  DL.FFShape = ffShape;
+  DL.FFUpdate = ffUpdate;
+
   /* ---------- รูป block FF: กล่อง + pin labels + สามเหลี่ยม CLK + ค่า Q ---------- */
   function ffShape(labelText) {
     return function (g, node) {
@@ -56,7 +60,11 @@
       isFF: true,
       w: opts.w || 130, h: opts.h || 64,
       pinLabels: pinLabels,
-      evalNode: function (node) {   // ระหว่าง combinational propagate — Q ห้ามเปลี่ยน
+      evalNode: function (node, v) {   // ระหว่าง propagate Q ห้ามเปลี่ยน ยกเว้น async CLR
+        if (v && v.clr === 1) {        // CLR = 1 → ล้างทันที ไม่รอ clock (async clear)
+          node.state.q = 0;
+          node.state.qn = 1;
+        }
         return { q: node.state.q, qn: node.state.qn };
       },
       initNode: function (node) {
@@ -117,8 +125,8 @@
     },
     { j: 'J', k: 'K', clk: 'CLK', q: 'Q', qn: 'Q̄' });
 
-  /* ---------- T Flip-Flop ---------- */
-  registerFF('TFF', 'T-FF', ['t', 'clk'],
+  /* ---------- T Flip-Flop (มี async CLR สำหรับ decade counter) ---------- */
+  registerFF('TFF', 'T-FF', ['t', 'clr', 'clk'],
     function (state, v) {
       if (!isHigh(v.t)) return state.q;                       // hold
       return state.q === T ? 1 : (1 - state.q);               // toggle
@@ -127,7 +135,7 @@
       return 'CLK ▲: T=' + n.ins.t + ' → Q ' + before + '→' + after +
              (isHigh(n.ins.t) ? ' (toggle — หารความถี่เป็น 2)' : ' (hold)');
     },
-    { t: 'T', clk: 'CLK', q: 'Q', qn: 'Q̄' });
+    { t: 'T', clr: 'CLR', clk: 'CLK', q: 'Q', qn: 'Q̄' });
 
   /* ---------- SR Flip-Flop (มี clock) ---------- */
   registerFF('SRFF', 'SR-FF', ['s', 'r', 'clk'],

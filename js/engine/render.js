@@ -186,10 +186,11 @@
   }
 
   /* ---------- อัปเดตสี/สถานะตามค่า logic ปัจจุบัน ---------- */
-  var VAL_CLASS = { 0: 'wire w0', 1: 'wire w1', '?': 'wire wq' };
   function update(sim) {
     sim.wires.forEach(function (w) {
-      w._el.setAttribute('class', VAL_CLASS[w.value] || 'wire wq');
+      // '?' = สถานะต้องห้าม (amber ปะ) · 0 = เทา · ค่าอื่น รวมถึงตัวเลข analog = เขียว
+      var cls = w.value === '?' ? 'wire wq' : (w.value === 0 ? 'wire w0' : 'wire w1');
+      w._el.setAttribute('class', cls);
       (w._dots || []).forEach(function (d) {
         d.setAttribute('class', w.value === 1 ? 'junction' : 'junction j0');
       });

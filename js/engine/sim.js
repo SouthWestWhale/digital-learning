@@ -61,7 +61,7 @@
     opts = opts || {};
     return this._add({ kind: 'output', id: id, label: opts.label || id,
                        color: opts.color || 'green', x: opts.x || 0, y: opts.y || 0,
-                       ins: null });
+                       ins: 0 });
   };
 
   CircuitSim.prototype.addGate = function (id, type, opts) {
@@ -159,6 +159,11 @@
     var ups = {};   // nodeId -> [sourceId...] (ไม่ซ้ำ)
     Object.keys(sim.nodes).forEach(function (id) { ups[id] = []; });
     sim.wires.forEach(function (w) {
+      var toNode = sim.nodes[w.to.id];
+      // FF เป็น "จุดตัดวงจร" (cut point): Q ของ FF คือ state ที่เก็บไว้
+      // ไม่ได้คำนวณจาก input ของตัวเอง จึงตัดสายที่เข้า FF ออกจากกราฟ
+      // → วงจร sequential ที่ feedback ผ่าน FF (D = f(Q, X)) ไม่ถูกนับเป็น loop
+      if (toNode.kind === 'comp' && toNode.def.isFF) return;
       if (ups[w.to.id].indexOf(w.from.id) < 0) ups[w.to.id].push(w.from.id);
     });
     return ups;
@@ -263,7 +268,23 @@
       else if (node.kind === 'gate') node.out = out;
       else node.out = out;
     });
-    // อัปเดตค่าบนสายจาก pin ต้นทาง
+    // Phase 2: ค่า input ของ FF ต้องอ่าน "หลัง" ทุก gate คำนวณเสร็จ
+    // (FF ถูกตัดออกจากกราฟ topo จึงอาจถูก eval ก่อน gate ต้นทาง — อ่านซ้ำตอนนี้ค่าสดเสมอ)
+    Object.keys(sim.nodes).forEach(function (id) {
+      var n = sim.nodes[id];
+      if (n.kind === 'comp' && n.def.isFF) n.ins = pinValues(sim, n);
+    });
+    // Phase 3: async clear — ถ้า CLR=1 ณ จุดนี้ (จาก gate เช่น decade counter)
+    // ล้าง FF ทันทีแบบ asynchronous จริง ไม่รอขอบ clock
+    Object.keys(sim.nodes).forEach(function (id) {
+      var n = sim.nodes[id];
+      if (n.kind === 'comp' && n.def.isFF && n.ins && n.ins.clr === 1 && n.state.q !== 0) {
+        n.state.q = 0;
+        n.state.qn = 1;
+        n.out = { q: 0, qn: 1 };
+      }
+    });
+    // สายไฟต้องอัปเดตท้ายสุด เพื่อสะท้อน state หลัง clear ด้วย
     sim.wires.forEach(function (w) {
       var src = sim.nodes[w.from.id];
       var pin = w.from.pin;
@@ -292,16 +313,19 @@
     var sim = this;
     return this.order.some(function (id) {
       var n = sim.nodes[id];
-      return n.kind === 'comp' && (n.comp === 'CLOCK' || /FF/.test(n.comp) || !!n.opts.needClock);
+      return n.kind === 'comp' && (typeof n.def.edge === 'function' ||
+                                   /FF/.test(n.comp) || !!n.opts.needClock);
     });
   };
 
   /* ---------- clock: ขอบขึ้นต่อการเรียก 1 ครั้ง ----------
-   * FF แบบ primary (opts.clocked) — ทุก clockEdge() คือ 1 ขอบขั้น
-   * FF แบบ ripple (opts.clockFrom = 'ffId' หรือ 'ffId:qn') — ยิงเมื่อค่า clock
-   *   ต้นทาง "ขอบขึ้น" (0→1) ณ ตอนที่ถึงคิวของตัวเอง (ประมวลผลตามลำดับประกาศ
-   *   จึงเหมือน ripple จริงที่ค่อยๆ ไหลทีละตัว)
-   * ห้าม evaluate Q ใหม่ระหว่าง propagate — Q เปลี่ยนเฉพาะที่นี่เท่านั้น
+   * ประมวลผลทุก comp ที่นิยาม def.edge (FF, astable, mono, ADC, CPU ...)
+   * - primary (มี pin clk หรือ opts.clocked) — ทุก clockEdge() คือ 1 ขอบขั้น
+   * - ripple (opts.clockFrom = 'ffId' หรือ 'ffId:qn') — ยิงเมื่อค่า clock ต้นทาง
+   *   "ขอบขึ้น" (0→1) ณ ตอนถึงคิวของตัวเอง (ตามลำดับประกาศ = ripple ไหลทีละตัว)
+   * - หลังยิง edge แล้ว evaluate ซ้ำจนนิ่ง เพื่อให้ async clear/reset จาก gate
+   *   (เช่น decade counter) ไหลสมบูรณ์ใน pulse เดียว
+   * Q เปลี่ยนได้เฉพาะที่นี่ (และ evalNode ของ FF ที่โดน async clear) เท่านั้น
    */
   CircuitSim.prototype.clockEdge = function () {
     var sim = this;
@@ -310,57 +334,84 @@
     var msgs = [];
     this.order.forEach(function (id) {
       var n = sim.nodes[id];
-      if (n.kind !== 'comp' || !n.def.isFF) return;
+      if (n.kind !== 'comp' || typeof n.def.edge !== 'function') return;
 
       var edge = false;
       var primary = (n.opts.clocked !== undefined)
         ? n.opts.clocked
-        : (n.def.inputs.indexOf('clk') >= 0);   // FF ที่มี pin clk = primary โดยดีฟอลต์
+        : (n.def.inputs.indexOf('clk') >= 0);   // มี pin clk = primary โดยดีฟอลต์
       if (n.opts.clockFrom !== undefined) primary = false;  // ripple — ขับด้วย FF ตัวอื่น
       if (primary) {
         edge = true;
       } else if (n.opts.clockFrom !== undefined) {
         var parts = String(n.opts.clockFrom).split(':');
         var src = sim.nodes[parts[0]];
-        if (!src || src.kind !== 'comp' || !src.def.isFF) {
+        if (!src || src.kind !== 'comp' || typeof src.def.edge !== 'function') {
           throw new Error('clockFrom ต้องชี้ไปที่ flip-flop: ' + n.opts.clockFrom);
         }
         var clkVal = parts[1] === 'qn' ? src.state.qn : src.state.q;
         if (n._prevClk === undefined) {
-          n._prevClk = clkVal;          // จับค่าเริ่มต้นไว้ก่อน — ไม่ยิง edge ครั้งแรก
+          n._prevClk = clkVal;          // จับค่าเริ่มต้น — ไม่ยิง edge ครั้งแรก
         } else {
           edge = (n._prevClk === 0 && clkVal === 1);
-          n._prevClk = clkVal;
         }
       }
       if (!edge) return;
 
       var before = n.state.q;
       var after = n.def.edge(n.state, n.ins, n);
-      n.state.q = after;
-      n.state.qn = (after === '?') ? '?' : (after ? 0 : 1);
+      if (after !== undefined) {        // edge คืนค่า Q ใหม่ (FF ทั่วไป)
+        n.state.q = after;
+        n.state.qn = (after === '?') ? '?' : (after ? 0 : 1);
+      }
       msgs.push(n.def.explain ? n.def.explain(n, before, after)
-                              : (id + ': Q ' + before + '→' + after));
+                              : (id + ': Q ' + before + '→' + n.state.q));
     });
 
-    this.evaluate();   // propagate Q ใหม่ไปทั้งวงจร
+    // settle: วงจร async (เช่น decade counter ใช้ CLR จาก AND gate) เปลี่ยน state
+    // ระหว่าง propagate → evaluate ซ้ำจน state นิ่ง (สูงสุด 8 รอบพอสำหรับวงจรสอน)
+    for (var i = 0; i < 8; i++) {
+      var beforeSnap = this._ffSnapshot();
+      this.evaluate();
+      if (this._ffSnapshot() === beforeSnap) break;
+    }
+
+    // sync _prevClk ของ FF ripple ให้ตรงค่าจริงหลัง settle
+    // (async clear เปลี่ยน Q นอก edge loop — ไม่ sync แล้ว pulse ถัดไปจะยิงผิดจังหวะ)
+    this.order.forEach(function (id) {
+      var n = sim.nodes[id];
+      if (n.kind !== 'comp' || n.opts.clockFrom === undefined) return;
+      var parts = String(n.opts.clockFrom).split(':');
+      var src = sim.nodes[parts[0]];
+      if (!src) return;
+      n._prevClk = parts[1] === 'qn' ? src.state.qn : src.state.q;
+    });
+
     this.explain(msgs.length ? msgs.join(' | ') : 'CLK ▲ — ทุก flip-flop คงค่าเดิม (hold)');
     this._fire();
   };
 
-  /* ---------- รีเซ็ต FF ทุกตัวกลับ Q=0 ---------- */
+  CircuitSim.prototype._ffSnapshot = function () {
+    var sim = this, s = [];
+    this.order.forEach(function (id) {
+      var n = sim.nodes[id];
+      if (n.kind === 'comp' && n.def.isFF && n.state) s.push(n.state.q + '|' + n.state.qn);
+    });
+    return s.join(',');
+  };
+
+  /* ---------- รีเซ็ต: comp ที่มี initNode กลับสู่สถานะเริ่มต้น ---------- */
   CircuitSim.prototype.reset = function () {
     var sim = this;
     this.order.forEach(function (id) {
       var n = sim.nodes[id];
-      if (n.kind === 'comp' && n.def.isFF) {
-        n.state.q = (n.def.initQ !== undefined) ? n.def.initQ : 0;
-        n.state.qn = n.state.q ? 0 : 1;
+      if (n.kind === 'comp' && n.def.initNode) {
+        n.def.initNode(n);
         n._prevClk = undefined;
       }
     });
     this.evaluate();
-    this.explain('รีเซ็ต — flip-flop ทุกตัวกลับสู่ Q = 0');
+    this.explain('รีเซ็ต — flip-flop ทุกตัวกลับสู่สถานะเริ่มต้น (Q = 0)');
     this._fire();
   };
 
