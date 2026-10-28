@@ -125,6 +125,14 @@
       panel.appendChild(steps);
     }
 
+    /* ---------- วิดเจ็ตเสริมเฉพาะบท (เช่นช่องใส่รหัสนักศึกษา) ----------
+     * spec.extra(sim, syncAll) คืน DOM element — แทรกไว้เหนือกล่องคำอธิบาย
+     */
+    if (typeof spec.extra === 'function') {
+      var custom = spec.extra(sim, function () { syncAll(); });
+      if (custom) panel.insertBefore(custom, explain);
+    }
+
     /* ---------- sync ทุกอย่างเมื่อ sim เปลี่ยน ---------- */
     function syncAll() {
       DL.Render.update(sim);

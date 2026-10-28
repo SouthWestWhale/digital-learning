@@ -270,3 +270,45 @@ table.tt td.hl, table.tt tr.hl td {
   font-size: 14px;
 }
 .doc-card .doc-link:hover { text-decoration: underline; }
+
+/* ---- วิดเจ็ตห้องทดลองรหัสนักศึกษา (บท Lab) ---- */
+.id-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--accent-soft);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin: 10px 0;
+}
+.id-editor .id-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.id-editor .id-input {
+  font-size: 16px;
+  padding: 7px 10px;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  width: 180px;
+  letter-spacing: 2px;
+  font-family: inherit;
+}
+.id-editor .id-input:focus { outline: none; border-color: var(--ink); }
+.id-editor .id-status { font-size: 13.5px; font-weight: 700; }
+.id-editor .id-status.id-ok { color: #15803d; }
+.id-editor .id-status.id-err { color: #dc2626; }
+.id-editor .id-pos {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--panel);
+  border-radius: 8px;
+  padding: 7px 12px;
+}
+.id-editor .sw-btn.on {
+  background: var(--accent);
+  color: #fff;
+}
