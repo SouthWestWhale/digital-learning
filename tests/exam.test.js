@@ -70,6 +70,46 @@ ok('q14: d ของทุก FF ต่อจาก qn ของตัวเอ�
    df.wires.some(function (w) { return w.from.id === 'ff2' && w.from.pin === 'qn' && w.to.id === 'ff2' && w.to.pin === 'd'; }));
 eq('q14: ff2 ต่อ ripple จาก ff1:qn', df.nodes['ff2'].opts.clockFrom, 'ff1:qn');
 
+/* ---------- บท exam-7476: Shift Register SIPO จาก 7476 (q06, q16, q42) ---------- */
+ok('exam-7476: ลงทะเบียนใน DL.LESSONS', !!DL.LESSONS['exam-7476']);
+ok('exam-7476: group = exam', DL.LESSONS['exam-7476'] && DL.LESSONS['exam-7476'].group === 'exam');
+eq('exam-7476: มี 1 วงจร', DL.LESSONS['exam-7476'] && DL.LESSONS['exam-7476'].circuits.length, 1);
+ok('exam-7476: html อ้างโจทย์ q06 + q16 + q42',
+   DL.LESSONS['exam-7476'].html.indexOf('docs/exam/q06.png') >= 0 &&
+   DL.LESSONS['exam-7476'].html.indexOf('q16') >= 0 &&
+   DL.LESSONS['exam-7476'].html.indexOf('q42') >= 0);
+ok('exam-7476: html ตอบ Serial in, Parallel out (SIPO)',
+   DL.LESSONS['exam-7476'].html.indexOf('Serial in, Parallel out') >= 0);
+
+var sr = build('exam-7476', 0);
+function q4(s) {
+  return [s.nodes['ff3'].state.q, s.nodes['ff2'].state.q, s.nodes['ff1'].state.q, s.nodes['ff0'].state.q];
+}
+function led4(s) {
+  return [s.outputValue('q3Led'), s.outputValue('q2Led'), s.outputValue('q1Led'), s.outputValue('q0Led')];
+}
+eq('7476: เริ่ม 0000', q4(sr), [0, 0, 0, 0]);
+
+sr.setInput('din', 1);
+pulse(sr, 1);
+eq('7476: din=1 pulse 1 → Q0=1 ที่เหลือ 0', led4(sr), [0, 0, 0, 1]);
+eq('7476: (state ตรงกัน)', q4(sr), [0, 0, 0, 1]);
+
+sr.setInput('din', 0); pulse(sr, 1);
+sr.setInput('din', 1); pulse(sr, 1);
+sr.setInput('din', 1); pulse(sr, 1);
+eq('7476: ป้อน 1,0,1,1 ครบ 4 pulse → [Q3,Q2,Q1,Q0]=[1,0,1,1]', led4(sr), [1, 0, 1, 1]);
+eq('7476: (state ตรงกัน — บิตเข้าก่อนไหลไปสุด Q3)', q4(sr), [1, 0, 1, 1]);
+
+ok('7476: ทุก JKFF เป็น primary clock (ไม่มี clockFrom)',
+   ['ff0', 'ff1', 'ff2', 'ff3'].every(function (id) { return !sr.nodes[id].opts.clockFrom; }));
+ok('7476: ff1 J,K ได้จาก Q ของ ff0 ผ่าน NOT (J ตรง K กลับ) — พฤติกรรมเหมือน D',
+   sr.wires.some(function (w) { return w.from.id === 'ff0' && w.from.pin === 'q' && w.to.id === 'ff1' && w.to.pin === 'j'; }) &&
+   sr.wires.some(function (w) { return w.from.id === 'not1' && w.from.pin === 'out' && w.to.id === 'ff1' && w.to.pin === 'k'; }));
+ok('7476: ff0 J รับ din ตรง, K ผ่าน NOT (7404 ตามรูป q06)',
+   sr.wires.some(function (w) { return w.from.id === 'din' && w.from.pin === 'out' && w.to.id === 'ff0' && w.to.pin === 'j'; }) &&
+   sr.wires.some(function (w) { return w.from.id === 'not0' && w.from.pin === 'out' && w.to.id === 'ff0' && w.to.pin === 'k'; }));
+
 /* ---------- สรุป ---------- */
 console.log('ผลทดสอบ exam.test.js: ' + pass + ' ผ่าน, ' + fail + ' พลาด');
 console.log(names.join('\n'));
