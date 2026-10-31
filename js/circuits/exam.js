@@ -495,4 +495,109 @@
         steps: ['เปิด I=1 (J=K=1 = toggle mode) แล้วกด Pulse Clock — เห็น P สลับทุกคล็อก แต่ Q สลับ "ช้ากว่า 1 จังหวะ"', 'กด ↺ รีเซ็ต → ตั้ง I=1 แล้ว Pulse 2 ครั้ง → ได้ Start (P,Q)=(0,1) ตามตารางในโจทย์ จากนั้นนับพร้อมตาราง: P₁ (1,0) → P₂ (0,1) → P₃ (1,0)', 'สรุป: หลัง 3 คล็อก P,Q = 1,0 (ข้อ b) — จำไว้ว่า D-FF ใช้ค่า D "ก่อนขอบคล็อก" Q จึงเหมือนบิตที่ถูกเลื่อนไป 1 ขั้น'] }
     ]
   });
+
+  /* ================= บท: State Diagram, Mealy และ MUX+FF (q07, q17, q30, q43) ================= */
+  DL.registerLesson({
+    id: 'exam-fsm',
+    group: 'exam',
+    title: 'State Diagram — Mealy, Moore และ MUX ฟีด DFF',
+    subtitle: 'q07 · q17 · q30 · q43 — อ่านสัญลักษณ์ state diagram, trace สตริง input ทีละบิต และวงจร MUX เลือกข้อมูลเข้า D',
+    html:
+      '<h2>สัญลักษณ์ State Diagram — อ่านให้เป็นก่อนทำข้อสอบ</h2>' +
+      '<ul>' +
+      '<li><b>วงกลม = state</b> (เขียนชื่อ/ค่า Q ไว้ในวง เช่น Q=0, Q=1 หรือ A, B, C, D)</li>' +
+      '<li><b>ลูกศร = การเปลี่ยนสถานะ (transition)</b> มีป้ายกำกับรูปแบบ <b>input / output</b> เช่น "1/0" แปลว่า "ถ้า input = 1 ให้เดินตามลูกศรนี้ และ output ออกเป็น 0"</li>' +
+      '<li><b>Mealy machine</b> = output เขียน <b>บนเส้นลูกศร</b> (ขึ้นกับ state + input) — แบบที่ข้อสอบชอบออก</li>' +
+      '<li><b>Moore machine</b> = output เขียน <b>ในวงกลม</b> (ขึ้นกับ state เดียว) — เช่น วงเขียน "Q=0 / Z=1"</li>' +
+      '<li>ลูกศรวนกลับเข้าตัวเอง (self-loop) = อยู่สถานะเดิมเมื่อ input ตรงป้าย</li>' +
+      '</ul>' +
+
+      '<h2>โจทย์ q07 — state diagram นี้ใช้ gate ใด? (q17 ออกแนวเดียวกัน)</h2>' +
+      '<div class="doc-card"><img src="docs/exam/q07.png" alt="โจทย์ q07 — state diagram เลือก gate" style="max-width:420px;width:100%;border-radius:6px">' +
+      '<p>ในรูป ป้ายบนลูกศรคือ <b>input/output</b>: คู่ "0X/1, 10/1" แปลว่า input 00 หรือ 01 หรือ 10 → output <b>1</b> ทั้งหมด ' +
+      'ส่วน "11/0" แปลว่า input 11 → output <b>0</b> — สรุป: <b>output 0 เฉพาะเมื่อ input เป็น 11 ทั้งคู่</b> ' +
+      'ตารางนี้คือ <b>NAND</b> เป๊ะ ๆ (AND แล้วกลับค่า: 1,1,1 → 0) ตอบข้อ <b>b. NAND</b> ' +
+      '(ถ้าเป็น AND จะได้ 0,0,0,1, ถ้า OR จะได้ 0,1,1,1, ถ้า XOR จะได้ 0,1,1,0 — ไม่มีตัวไหน 0 แค่ที่ 11 เท่า NAND) ' +
+      'ลองกด input ครบ 4 คู่ในวงจรที่ 1 ด้านล่างแล้วเทียบกับ diagram ด้วยตาตัวเอง</p></div>' +
+
+      '<h2>โจทย์ q30 — trace สตริง input ทีละบิตบน Mealy diagram</h2>' +
+      '<div class="doc-card"><img src="docs/exam/q30.png" alt="โจทย์ q30 — trace Mealy state diagram" style="max-width:520px;width:100%;border-radius:6px">' +
+      '<p>โจทย์ให้ diagram 4 สถานะ A, B, C, D แล้วสั่ง: เริ่มที่ <b>state C</b> ป้อน input X = <b>001011001</b> (ซ้าย→ขวา) ' +
+      'ถาม <b>output และ state สุดท้าย</b> — วิธีทำคือเดินทีละบิต: อ่านบิต → หาลูกศรที่ป้าย input ตรง → จด output บนป้าย → ย้ายไป state ปลายลูกศร</p>' +
+      '<p>ตาราง transition ของ diagram ในรูป (อ่านป้าย input/output บนลูกศร): ' +
+      'A: 0/1→A (self), 1/0→D &nbsp;·&nbsp; C: 0/0→A, 1/1→D &nbsp;·&nbsp; D: 0/0→C, 1/1→D (self) &nbsp;·&nbsp; B: 0/1→D, 1/0→A</p>' +
+      '<p>เดินตาราง (เริ่ม C ตามโจทย์ — เขียน "started state" ไว้บนกระดาษในรูป):</p>' +
+      '<table border="1" cellpadding="6" style="border-collapse:collapse;margin:8px 0">' +
+      '<tr><th>ขั้น</th><th>state ปัจจุบัน</th><th>input</th><th>next state</th><th>output</th></tr>' +
+      '<tr><td>1</td><td>C</td><td>0</td><td>A</td><td>0</td></tr>' +
+      '<tr><td>2</td><td>A</td><td>0</td><td>A</td><td>1</td></tr>' +
+      '<tr><td>3</td><td>A</td><td>1</td><td>D</td><td>0</td></tr>' +
+      '<tr><td>4</td><td>D</td><td>0</td><td>C</td><td>0</td></tr>' +
+      '<tr><td>5</td><td>C</td><td>1</td><td>D</td><td>1</td></tr>' +
+      '<tr><td>6</td><td>D</td><td>1</td><td>D</td><td>1</td></tr>' +
+      '<tr><td>7</td><td>D</td><td>0</td><td>C</td><td>0</td></tr>' +
+      '<tr><td>8</td><td>C</td><td>0</td><td>A</td><td>0</td></tr>' +
+      '<tr><td>9</td><td>A</td><td>1</td><td>D</td><td>0</td></tr>' +
+      '</table>' +
+      '<p>ลำดับ output ที่ได้ = <b>0 1 0 0 1 1 0 0 0</b> (ตรงแถว output ที่ลายมือเขียนไว้ในรูป) ' +
+      'และ state สุดท้ายคือ <b>D</b> → ตอบข้อ <b>b</b> (output สุดท้าย = 0, state สุดท้ายคือ D) ' +
+      'ตัวเลือก a ที่ว่า state สุดท้ายคือ A ผิด — A เป็นแค่ state "ก่อนบิตสุดท้าย" ต้องเดินบิตที่ 9 ให้ครบก่อน! ' +
+      'เคล็ดลับข้อสอบ: ขีดเส้นแยกทีละคอลัมน์บนกระดาษเหมือนในรูป แล้วขีดฆ่าทีละบิต จะไม่หลงแถว</p></div>' +
+
+      '<h2>โจทย์ q43 — MUX 2-to-1 ฟีดเข้า D ของ D-FF</h2>' +
+      '<div class="doc-card"><img src="docs/exam/q43.png" alt="โจทย์ q43 — 2-1 MUX ต่อ D flip-flop" style="max-width:420px;width:100%;border-radius:6px">' +
+      '<p>รูปข้อสอบ: <b>2-1 MUX</b> รับข้อมูล X1, X0 กับขาเลือก <b>Select = A</b> แล้วเอาผลลัพธ์ Y ไปเข้า <b>D</b> ของ D-FF (CLK รวม) ' +
+      'ตัวเลือกเป็น state diagram 4 แบบ — เฉลยได้จากสมการเดียว: <b>Y = Ā·X0 + A·X1</b> (A=0 เลือก X0, A=1 เลือก X1) ' +
+      'ดังนั้น <b>Q(next) = Y ทุกขอบ clock</b> — สถานะถัดไปของ FF "ถูกเลือก" โดย A ทุก pulse: ' +
+      'A=0 → Q ตาม X0, A=1 → Q ตาม X1 วงจรที่ 2 ด้านล่างเราประกอบ MUX จาก gate จริง (engine ไม่มี MUX เป็น gate): ' +
+      '<b>AND(x, NOT s)</b> คือทาง d0, <b>AND(y, s)</b> คือทาง d1, แล้ว <b>OR รวม</b>เข้า D — กด s, x, y แล้ว Pulse Clock ดูสิ ว่า Q จะตาม "สายที่ s เลือก" เท่านั้น</p>' +
+      '<div class="note">ทำไมต้องรู้จักแบบนี้? เพราะการออกแบบ FSM จริง ๆ ใช้หลักเดียวกัน: logic ผสม (gates) เลือกว่า "next state" จะเป็นอะไร แล้ว FF เก็บไว้ทุกขอบ clock ' +
+      'เห็น MUX หน้า D = กำลังมอง state diagram ที่ยังไม่วาด — กด pulse ไล่ดูแล้ววาด diagram ตามเองได้เลย</div>',
+
+    summary:
+      '<ul>' +
+      '<li>สัญลักษณ์: วงกลม = state, ลูกศร = transition ป้าย <b>input/output</b> — Mealy เขียน output <b>บนลูกศร</b>, Moore เขียน output <b>ในวงกลม</b></li>' +
+      '<li>q07/q17: ป้ายบน diagram แสดงว่า output 0 เฉพาะตอน input 11 → <b>NAND</b> (ตอบข้อ b) — กดครบ 4 คู่ในวงจรที่ 1 เทียบได้ 1,1,1,0</li>' +
+      '<li>q30: trace สตริง input ทีละบิตด้วยตาราง state | input | next state | output — เริ่ม C, X=001011001 → output 010011000, state สุดท้าย <b>D</b> (ข้อ b) — อย่าลืมเดิน "บิตสุดท้าย" ให้ครบ</li>' +
+      '<li>q43: <b>MUX = เลือกสายข้อมูลเข้า D</b> — Y = Ā·X0 + A·X1 แล้ว Q(next)=Y ทุกขอบ clock; ประกอบจาก gate ได้ด้วย AND(x,s̄) OR AND(y,s)</li>' +
+      '</ul>',
+    circuits: [
+      { title: 'โจทย์ q07: state diagram → วงจรจริง — กด input ครบ 4 คู่ output จะได้ 1,1,1,0 = NAND',
+        build: function (sim) {
+          sim.addInput('x1', { x: 60, y: 110, label: 'x1' });
+          sim.addInput('x0', { x: 60, y: 200, label: 'x0' });
+          sim.addGate('g1', 'NAND', { x: 300, y: 150, n: 2 });
+          sim.addOutput('yLed', { x: 460, y: 150, label: 'Y (output)' });
+          sim.wire('x1', 'out', 'g1', 0, [[140, 110], [230, 110], [230, 132]]);
+          sim.wire('x0', 'out', 'g1', 1, [[140, 200], [230, 200], [230, 168]]);
+          sim.wire('g1', 'out', 'yLed', 'in');
+          sim.explain('ป้ายบน diagram q07: input 00/01/10 → output 1, input 11 → output 0 = NAND — กด input ครบ 4 คู่แล้วเทียบกับลูกศรในรูปข้อสอบทีละเส้น');
+        },
+        steps: ['ปล่อย x1=0, x0=0 — LED ติด (output 1) ตรงป้าย "0X/1"', 'กด x0=1 แล้ว x0=0,x1=1 ไล่ดู — ยังติดทั้งคู่ ตรงป้าย "0X/1, 10/1"', 'กด x1=1 พร้อม x0=1 — LED ดับ (output 0) ตรงป้าย "11/0" → ครบ 4 คู่ได้ 1,1,1,0 = NAND ตอบข้อ b ตามเฉลย'] },
+      { title: 'โจทย์ q43: MUX 2-to-1 (ประกอบจาก gate) ฟีด DFF — Q(next) ตามสายที่ s เลือกทุก pulse',
+        build: function (sim) {
+          sim.addInput('s', { x: 60, y: 90, label: 's (Select = A)' });
+          sim.addInput('x', { x: 60, y: 200, label: 'x (ทาง d0: s=0)' });
+          sim.addInput('y', { x: 60, y: 330, label: 'y (ทาง d1: s=1)' });
+          // ประกอบ MUX: d0 = AND(x, NOT s), d1 = AND(y, s), Y = OR รวม
+          sim.addGate('not1', 'NOT', { x: 190, y: 90 });
+          sim.addGate('and0', 'AND', { x: 330, y: 160, n: 2 });
+          sim.addGate('and1', 'AND', { x: 330, y: 290, n: 2 });
+          sim.addGate('or1', 'OR', { x: 480, y: 225, n: 2 });
+          sim.addComponent('dff', 'DFF', { x: 640, y: 200 });   // primary clock (CLK รวม)
+          sim.addOutput('qLed', { x: 800, y: 200, label: 'Q' });
+          sim.wire('s', 'out', 'not1', 0, [[140, 90], [160, 90]]);
+          sim.wire('s', 'out', 'and1', 0, [[140, 90], [290, 90], [290, 272]]);
+          sim.wire('x', 'out', 'and0', 0, [[140, 200], [290, 200], [290, 178]]);
+          sim.wire('not1', 'out', 'and0', 1, [[240, 90], [250, 90], [250, 130], [250, 160], [280, 160], [280, 178]]);
+          sim.wire('y', 'out', 'and1', 1, [[140, 330], [280, 330], [280, 308]]);
+          sim.wire('and0', 'out', 'or1', 0, [[400, 160], [440, 160], [440, 207]]);
+          sim.wire('and1', 'out', 'or1', 1, [[400, 290], [440, 290], [440, 243]]);
+          sim.wire('or1', 'out', 'dff', 'd', [[550, 225], [590, 225], [590, 182]]);
+          sim.wire('dff', 'q', 'qLed', 'in');
+          sim.explain('MUX จาก gate: Y = (x AND NOT s) OR (y AND s) → เข้า D ของ DFF — s=0 Q ตาม x, s=1 Q ตาม y ทุกขอบ clock (ตามรูป q43: Select A เลือก X0/X1 ก่อนเข้า D)');
+        },
+        steps: ['ตั้ง s=0, x=1 แล้วกด Pulse Clock — Q ติด เพราะ s=0 ให้ MUX เลือกสาย x ไปที่ D', 'เปลี่ยน s=1, y=0 แล้วกด Pulse Clock — Q ดับ เพราะตอนนี้ MUX สลับไปเลือกสาย y แทน', 'สลับ s กลับไปมาพร้อมเปลี่ยน x/y แล้วกด pulse ต่อ — เห็นว่า Q(next) ตาม "สายที่ s เลือก" เสมอ = state diagram ของ q43 กำลังทำงานต่อหน้าตา'] }
+    ]
+  });
 })();

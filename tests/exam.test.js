@@ -320,6 +320,53 @@ for (var tp = 1; tp <= 3; tp++) { pulse(tq, 1); trace.push(pq(tq)); }
 eq('q34: trace 3 คล็อก (I=1): P1=(1,0), P2=(0,1), P3=(1,0) — Q ตาม P ของคล็อกก่อนหน้าเสมอ', trace, [[1, 0], [0, 1], [1, 0]]);
 eq('q34: หลัง 3 คล็อก P,Q = 1,0 (ตรงเฉลยข้อสอบ q34 ข้อ b)', pq(tq), [1, 0]);
 
+/* ---------- บท exam-fsm: State Diagram, Mealy, MUX+FF (q07, q30, q43) ---------- */
+ok('exam-fsm: ลงทะเบียนใน DL.LESSONS', !!DL.LESSONS['exam-fsm']);
+ok('exam-fsm: group = exam', DL.LESSONS['exam-fsm'] && DL.LESSONS['exam-fsm'].group === 'exam');
+eq('exam-fsm: มี 2 วงจร', DL.LESSONS['exam-fsm'] && DL.LESSONS['exam-fsm'].circuits.length, 2);
+ok('exam-fsm: html อ้างโจทย์ q07 + q30 + q43',
+   DL.LESSONS['exam-fsm'].html.indexOf('docs/exam/q07.png') >= 0 &&
+   DL.LESSONS['exam-fsm'].html.indexOf('docs/exam/q30.png') >= 0 &&
+   DL.LESSONS['exam-fsm'].html.indexOf('docs/exam/q43.png') >= 0);
+ok('exam-fsm: html สอนสัญลักษณ์ Mealy/Moore + trace ตาราง (q30)',
+   DL.LESSONS['exam-fsm'].html.indexOf('Mealy') >= 0 &&
+   DL.LESSONS['exam-fsm'].html.indexOf('Moore') >= 0 &&
+   DL.LESSONS['exam-fsm'].html.indexOf('<table') >= 0);
+ok('exam-fsm: summary มีกฎจำ (output 0 ตอน 11 = NAND, MUX เลือกสายเข้า D)',
+   DL.LESSONS['exam-fsm'].summary.indexOf('NAND') >= 0 &&
+   DL.LESSONS['exam-fsm'].summary.indexOf('MUX') >= 0);
+
+/* วงจร 1: q07 — NAND จาก state diagram: output 1,1,1,0 สำหรับ (x1,x0) = 00,01,10,11 */
+var nd = build('exam-fsm', 0);
+nd.setInput('x1', 1); nd.setInput('x0', 1);   // warm-up: gate evaluate ครั้งแรก (00 ตั้งแต่แรกจะยังไม่ evaluate)
+var nandTT = [];
+[[0, 0], [0, 1], [1, 0], [1, 1]].forEach(function (p) {
+  nd.setInput('x1', p[0]); nd.setInput('x0', p[1]);
+  nandTT.push(nd.outputValue('yLed'));
+});
+eq('q07: ตารางค่าความจริง (x1,x0)=00,01,10,11 → output 1,1,1,0 (0 เฉพาะ 11 = NAND)', nandTT, [1, 1, 1, 0]);
+ok('q07: ใช้ gate NAND ตามเฉลยข้อสอบ (ข้อ b)', nd.nodes['g1'].type === 'NAND');
+
+/* วงจร 2: q43 — MUX 2-to-1 (AND(x,NOT s) OR AND(y,s)) → DFF: D ตาม input ที่ sel เลือกทุกขอบ */
+var mx = build('exam-fsm', 1);
+ok('q43: MUX ประกอบจาก gates — NOT s, AND0(x,ns), AND1(y,s), OR รวมเข้า d ของ DFF',
+   mx.wires.some(function (w) { return w.from.id === 's' && w.to.id === 'not1'; }) &&
+   mx.wires.some(function (w) { return w.from.id === 'x' && w.to.id === 'and0'; }) &&
+   mx.wires.some(function (w) { return w.from.id === 'not1' && w.to.id === 'and0'; }) &&
+   mx.wires.some(function (w) { return w.from.id === 'y' && w.to.id === 'and1'; }) &&
+   mx.wires.some(function (w) { return w.from.id === 's' && w.to.id === 'and1'; }) &&
+   mx.wires.some(function (w) { return w.from.id === 'or1' && w.from.pin === 'out' && w.to.id === 'dff' && w.to.pin === 'd'; }));
+ok('q43: DFF เป็น primary clock (CLK รวม)', !mx.nodes['dff'].opts.clockFrom);
+mx.setInput('s', 0); mx.setInput('x', 1); mx.setInput('y', 0);
+pulse(mx, 1);
+eq('q43: s=0 เลือก x — x=1 pulse → Q=1', mx.outputValue('qLed'), 1);
+mx.setInput('s', 1); mx.setInput('y', 0);
+pulse(mx, 1);
+eq('q43: s=1 เลือก y — y=0 pulse → Q=0 (D ตาม input ที่ถูกเลือกทุกขอบ)', mx.outputValue('qLed'), 0);
+mx.setInput('s', 0); mx.setInput('x', 1);
+pulse(mx, 1);
+eq('q43: กลับ s=0, x=1 pulse → Q=1 อีกครั้ง (mux สลับสายได้)', mx.outputValue('qLed'), 1);
+
 /* ---------- สรุป ---------- */
 console.log('ผลทดสอบ exam.test.js: ' + pass + ' ผ่าน, ' + fail + ' พลาด');
 console.log(names.join('\n'));
