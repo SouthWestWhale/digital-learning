@@ -70,14 +70,17 @@ ok('q14: d ของทุก FF ต่อจาก qn ของตัวเอ�
    df.wires.some(function (w) { return w.from.id === 'ff2' && w.from.pin === 'qn' && w.to.id === 'ff2' && w.to.pin === 'd'; }));
 eq('q14: ff2 ต่อ ripple จาก ff1:qn', df.nodes['ff2'].opts.clockFrom, 'ff1:qn');
 
-/* ---------- บท exam-7476: Shift Register SIPO จาก 7476 (q06, q16, q42) ---------- */
+/* ---------- บท exam-7476: Shift Register SIPO จาก 7476 (q06, q16) ---------- */
 ok('exam-7476: ลงทะเบียนใน DL.LESSONS', !!DL.LESSONS['exam-7476']);
 ok('exam-7476: group = exam', DL.LESSONS['exam-7476'] && DL.LESSONS['exam-7476'].group === 'exam');
 eq('exam-7476: มี 1 วงจร', DL.LESSONS['exam-7476'] && DL.LESSONS['exam-7476'].circuits.length, 1);
-ok('exam-7476: html อ้างโจทย์ q06 + q16 + q42',
+ok('exam-7476: html อ้างโจทย์ q06 + q16 (ไม่อ้าง q42 เป็นโจทย์ 7476)',
    DL.LESSONS['exam-7476'].html.indexOf('docs/exam/q06.png') >= 0 &&
    DL.LESSONS['exam-7476'].html.indexOf('q16') >= 0 &&
-   DL.LESSONS['exam-7476'].html.indexOf('q42') >= 0);
+   DL.LESSONS['exam-7476'].html.indexOf('q42') < 0);
+ok('exam-7476: html บอกว่าออกซ้ำ 3 ครั้งในข้อสอบจริง (ธนาคารมี 2 ครั้ง)',
+   DL.LESSONS['exam-7476'].html.indexOf('ออกซ้ำ 3 ครั้งในข้อสอบจริง') >= 0 &&
+   DL.LESSONS['exam-7476'].html.indexOf('มี 2 ครั้ง') >= 0);
 ok('exam-7476: html ตอบ Serial in, Parallel out (SIPO)',
    DL.LESSONS['exam-7476'].html.indexOf('Serial in, Parallel out') >= 0);
 
@@ -283,26 +286,26 @@ ok('exam-shift: summary มีกฎจำ (1 pulse = เลื่อน 1 บ�
 
 /* วงจร 1: q18 — 4×DFF shift ขวาตามรูปข้อสอบ (din→q3/D, เลื่อน D→C→B→A, บิตออกที่ q0/A)
  * ทิศยืนยันจากภาพ q18: header "in: D C B A" + ตาราง P1=1000, P2=1100, P3=0110, P4=0011 + เฉลย ข้อ a = 0011 */
-var sr = build('exam-shift', 0);
+var srx = build('exam-shift', 0);
 ok('q18: ใช้ DFF 4 ตัว เป็น primary clock ทั้งหมด (CLK รวม)',
    ['ff0', 'ff1', 'ff2', 'ff3'].every(function (id) {
-     return sr.nodes[id] && sr.nodes[id].comp === 'DFF' && !sr.nodes[id].opts.clockFrom;
+     return srx.nodes[id] && srx.nodes[id].comp === 'DFF' && !srx.nodes[id].opts.clockFrom;
    }));
 ok('q18: สายตามรูปข้อสอบ — din→ff3.d (D), ff3.q→ff2.d, ff2.q→ff1.d, ff1.q→ff0.d, ff0.q→out (serial ที่ A)',
-   sr.wires.some(function (w) { return w.from.id === 'din' && w.to.id === 'ff3' && w.to.pin === 'd'; }) &&
-   sr.wires.some(function (w) { return w.from.id === 'ff3' && w.from.pin === 'q' && w.to.id === 'ff2' && w.to.pin === 'd'; }) &&
-   sr.wires.some(function (w) { return w.from.id === 'ff2' && w.from.pin === 'q' && w.to.id === 'ff1' && w.to.pin === 'd'; }) &&
-   sr.wires.some(function (w) { return w.from.id === 'ff1' && w.from.pin === 'q' && w.to.id === 'ff0' && w.to.pin === 'd'; }) &&
-   sr.wires.some(function (w) { return w.from.id === 'ff0' && w.from.pin === 'q' && w.to.id === 'outLed' && w.to.pin === 'in'; }));
+   srx.wires.some(function (w) { return w.from.id === 'din' && w.to.id === 'ff3' && w.to.pin === 'd'; }) &&
+   srx.wires.some(function (w) { return w.from.id === 'ff3' && w.from.pin === 'q' && w.to.id === 'ff2' && w.to.pin === 'd'; }) &&
+   srx.wires.some(function (w) { return w.from.id === 'ff2' && w.from.pin === 'q' && w.to.id === 'ff1' && w.to.pin === 'd'; }) &&
+   srx.wires.some(function (w) { return w.from.id === 'ff1' && w.from.pin === 'q' && w.to.id === 'ff0' && w.to.pin === 'd'; }) &&
+   srx.wires.some(function (w) { return w.from.id === 'ff0' && w.from.pin === 'q' && w.to.id === 'outLed' && w.to.pin === 'in'; }));
 function qall(s) { return ['ff3', 'ff2', 'ff1', 'ff0'].map(function (id) { return s.nodes[id].state.q; }); }
-eq('q18: เริ่ม 0000', qall(sr), [0, 0, 0, 0]);
+eq('q18: เริ่ม 0000', qall(srx), [0, 0, 0, 0]);
 var feed = [1, 1, 0, 0];
-for (var fp = 0; fp < 4; fp++) { sr.setInput('din', feed[fp]); pulse(sr, 1); }
-eq('q18: หลัง pulse ครบ 4 (din = 1,1,0,0): D C B A = [q3,q2,q1,q0] = [0,0,1,1] = 0011 (ตรงเฉลยข้อสอบ q18 ข้อ a)', qall(sr), [0, 0, 1, 1]);
-var exitStream = [sr.nodes['ff0'].state.q];   // บิตที่ 1 อยู่ที่ A แล้วตอนจบ pulse 4 กำลังจะหลุดออก
-for (var ep = 5; ep <= 7; ep++) { sr.setInput('din', 0); pulse(sr, 1); exitStream.push(sr.nodes['ff0'].state.q); }
+for (var fp = 0; fp < 4; fp++) { srx.setInput('din', feed[fp]); pulse(srx, 1); }
+eq('q18: หลัง pulse ครบ 4 (din = 1,1,0,0): D C B A = [q3,q2,q1,q0] = [0,0,1,1] = 0011 (ตรงเฉลยข้อสอบ q18 ข้อ a)', qall(srx), [0, 0, 1, 1]);
+var exitStream = [srx.nodes['ff0'].state.q];   // บิตที่ 1 อยู่ที่ A แล้วตอนจบ pulse 4 กำลังจะหลุดออก
+for (var ep = 5; ep <= 7; ep++) { srx.setInput('din', 0); pulse(srx, 1); exitStream.push(srx.nodes['ff0'].state.q); }
 eq('q18: บิตออกทาง A (serial out) หลัง pulse 4,5,6,7 = 1,1,0,0 (ตรงลำดับที่ป้อนเข้า — เข้าก่อนออกก่อน FIFO)', exitStream, [1, 1, 0, 0]);
-eq('q18: คล็อก 0 ต่อจนครบ 7 pulse → register กลับว่าง = 0000', qall(sr), [0, 0, 0, 0]);
+eq('q18: คล็อก 0 ต่อจนครบ 7 pulse → register กลับว่าง = 0000', qall(srx), [0, 0, 0, 0]);
 
 /* วงจร 2: q34 — JK (J=K=I) → P, P → D-FF → Q — trace 3 คล็อกจาก Start P=0,Q=1 */
 var tq = build('exam-shift', 1);

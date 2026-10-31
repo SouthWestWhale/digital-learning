@@ -170,30 +170,10 @@
     var explainBox = el('div', null, null);
     var linkRow = null;
 
-    function lock() {
-      Array.prototype.forEach.call(choiceRow.querySelectorAll('button'), function (b) { b.disabled = true; });
-    }
-
     function answer(idx) {
       var okAns = DL.EXAMQ.check(q, idx);
       DL.EXAMQ.savePick(q.id, { picked: idx, correct: okAns });
-      Array.prototype.forEach.call(choiceRow.children, function (btn, i) {
-        btn.disabled = true;
-        if (i === q.answer) {
-          btn.style.cssText = 'text-align:left;background:#d4f7d4;border-color:#1a7f37;color:#1a7f37;font-weight:600;';
-        } else if (i === idx && !okAns) {
-          btn.style.cssText = 'text-align:left;background:#fde0e0;border-color:#cf222e;color:#cf222e;';
-        }
-      });
-      explainBox.className = okAns ? 'note' : 'warn';
-      explainBox.innerHTML = (okAns ? '<strong>✓ ถูกต้อง!</strong> ' : '<strong>✗ ยังไม่ถูก — เฉลยข้อ ' +
-        String.fromCharCode(65 + q.answer) + '</strong> ') + q.explain;
-      if (q.link) {
-        linkRow = el('div', null, '<a href="#/lesson/' + q.link + '">ดูวงจรที่เกี่ยว →</a>');
-        linkRow.style.cssText = 'margin-top:8px;';
-        card.appendChild(linkRow);
-      }
-      rerender();
+      rerender();   // render() วาดสถานะที่เลือกไว้ใหม่ทั้งการ์ดจาก prev ใน buildCard ที่เดียว
     }
 
     q.choices.forEach(function (c, i) {

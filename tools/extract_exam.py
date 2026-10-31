@@ -27,7 +27,7 @@ import sys
 
 import pymupdf
 
-PDF_PATH = r"C:\Users\Karalann\Downloads\final digi\ข้อสอบดิจิ.pdf"
+PDF_PATH = sys.argv[1] if len(sys.argv) > 1 else r"C:\Users\Karalann\Downloads\final digi\ข้อสอบดิจิ.pdf"
 OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "exam")
 DPI = 130
 CONTACT_COLS = 4
