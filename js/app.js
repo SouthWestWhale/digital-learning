@@ -208,6 +208,9 @@
     // หน้าเอกสาร — สร้างการ์ดไฟล์ PDF
     if (id === 'documents') buildDocList(body);
 
+    // หน้าติวฟินอล — ธนาคารข้อสอบ ตรวจทันที
+    if (id === 'exam-quiz' && typeof DL.buildExamQuiz === 'function') DL.buildExamQuiz(body);
+
     // วงจร interactive — engine (DL.CircuitPanel) จะมาใน M1; ก่อนหน้านั้นข้าม
     if (L.circuits && L.circuits.length && typeof DL.CircuitPanel === 'function') {
       L.circuits.forEach(function (spec) {

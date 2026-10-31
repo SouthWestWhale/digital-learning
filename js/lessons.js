@@ -17,6 +17,7 @@
     { id: 'sequential', name: 'Sequential (จากสไลด์)' },
     { id: 'course',     name: 'บทเรียนจากสไลด์ บท 7–12' },
     { id: 'lab',        name: 'Lab — โปรเจ็กต์จริง' },
+    { id: 'exam',       name: 'ติวฟินอล — ข้อสอบจริง' },
     { id: 'docs',       name: 'เอกสารประกอบ' }
   ];
 

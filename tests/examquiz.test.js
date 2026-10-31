@@ -58,6 +58,67 @@ var src = fs.readFileSync(path.join(__dirname, '..', 'js', 'exam', 'questions.js
 ok('ซอร์สไม่มี fetch(', src.indexOf('fetch(') === -1);
 ok('ซอร์สไม่มี XMLHttpRequest', src.indexOf('XMLHttpRequest') === -1);
 
+/* ---------- quiz UI logic (DL.EXAMQ) ---------- */
+// stub localStorage ในหน่วยความจำ ก่อน require examquiz.js
+function makeStorage(throwOnAccess) {
+  var mem = {};
+  return {
+    getItem: function (k) { if (throwOnAccess) throw new Error('boom'); return mem.hasOwnProperty(k) ? mem[k] : null; },
+    setItem: function (k, v) { if (throwOnAccess) throw new Error('boom'); mem[k] = String(v); },
+    removeItem: function (k) { if (throwOnAccess) throw new Error('boom'); delete mem[k]; }
+  };
+}
+global.localStorage = makeStorage(false);
+require('../js/lessons.js');      // ให้มี DL.GROUPS / DL.registerLesson จริงตามหน้าเว็บ
+require('../js/exam/examquiz.js');
+
+var Q = DL.EXAMQ;
+ok('มี DL.EXAMQ (filterByTopic/check/loadPicks/savePick/buildExamQuiz เป็น function)',
+  !!Q && typeof Q.filterByTopic === 'function' && typeof Q.check === 'function' &&
+  typeof Q.loadPicks === 'function' && typeof Q.savePick === 'function' && typeof DL.buildExamQuiz === 'function');
+
+if (Q) {
+  ok('filterByTopic all คืนครบ 52', Q.filterByTopic(qs, 'all').length === 52);
+  var firstTopic = DL.EXAM_TOPICS[0].id;
+  var filtered = Q.filterByTopic(qs, firstTopic);
+  ok('filterByTopic topic แรกได้ > 0 ข้อ', filtered.length > 0);
+  ok('filterByTopic ทุกข้อที่ได้ topic ตรง', filtered.every(function (q) { return q.topic === firstTopic; }));
+
+  ok('check ถูก (idx === answer)', Q.check({ answer: 2 }, 2) === true);
+  ok('check ผิด (idx !== answer)', Q.check({ answer: 2 }, 1) === false);
+
+  // savePick/loadPicks กลมกลืน
+  global.localStorage = makeStorage(false);
+  Q.savePick('q01', { picked: 2, correct: false });
+  Q.savePick('q07', { picked: 3, correct: true });
+  var picks = Q.loadPicks();
+  ok('savePick/loadPicks กลมกลืน (q01)', picks.q01 && picks.q01.picked === 2 && picks.q01.correct === false);
+  ok('savePick/loadPicks กลมกลืน (q07)', picks.q07 && picks.q07.picked === 3 && picks.q07.correct === true);
+
+  // stub ที่ throw — ต้องไม่ crash
+  global.localStorage = makeStorage(true);
+  var throwsPicks = null;
+  try { throwsPicks = Q.loadPicks(); } catch (e) { throwsPicks = 'THREW'; }
+  ok('localStorage พัง → loadPicks คืน {} ไม่ throw', throwsPicks !== null && typeof throwsPicks === 'object' && !(throwsPicks instanceof Array) && Object.keys(throwsPicks).length === 0);
+  var saveOk = true;
+  try { Q.savePick('q01', { picked: 0, correct: true }); } catch (e) { saveOk = false; }
+  ok('localStorage พัง → savePick เงียบ ไม่ throw', saveOk === true);
+  global.localStorage = makeStorage(false);
+}
+
+/* ---------- บทเรียน + กลุ่ม ---------- */
+ok('มีบท exam-quiz ลงทะเบียนแล้ว', !!(DL.LESSONS && DL.LESSONS['exam-quiz']));
+ok('บท exam-quiz อยู่กลุ่ม exam', DL.LESSONS && DL.LESSONS['exam-quiz'] && DL.LESSONS['exam-quiz'].group === 'exam');
+var examGroup = (DL.GROUPS || []).filter(function (g) { return g.id === 'exam'; })[0];
+ok('DL.GROUPS มี group exam ชื่อมีคำว่า ติวฟินอล', !!examGroup && examGroup.name.indexOf('ติวฟินอล') !== -1);
+ok('group exam อยู่หลัง lab', examGroup && DL.GROUPS.map(function (g) { return g.id; }).indexOf('lab') < DL.GROUPS.map(function (g) { return g.id; }).indexOf('exam'));
+
+/* ---------- ห้ามมี fetch/XHR/setInterval ใน examquiz.js ---------- */
+var quizSrc = fs.readFileSync(path.join(__dirname, '..', 'js', 'exam', 'examquiz.js'), 'utf8');
+ok('examquiz.js ไม่มี fetch(', quizSrc.indexOf('fetch(') === -1);
+ok('examquiz.js ไม่มี XMLHttpRequest', quizSrc.indexOf('XMLHttpRequest') === -1);
+ok('examquiz.js ไม่มี setInterval', quizSrc.indexOf('setInterval') === -1);
+
 /* ---------- สรุป ---------- */
 console.log('\n=== examquiz.test.js ===');
 names.forEach(function (n) { console.log(n); });
