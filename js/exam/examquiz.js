@@ -150,6 +150,9 @@
     }
 
     var card = el('div', 'doc-card', null);
+    // .doc-card ยืมจากหน้าเอกสารซึ่งเป็น flex แนวนอน (ไอคอน+ข้อความ) — การ์ดข้อสอบต้องเรียงแนวตั้ง
+    // (ป้าย → ภาพ → โจทย์ → ตัวเลือก → กล่องคำอธิบายเต็มความกว้างใต้ตัวเลือก) จึง override เป็น block
+    card.style.display = 'block';
 
     /* ป้ายหัวการ์ด */
     card.appendChild(el('div', 'tt', 'ข้อที่ ' + q.num + ' · ' + topicName));
