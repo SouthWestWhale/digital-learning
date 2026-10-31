@@ -35,6 +35,7 @@ if (Array.isArray(qs) && qs.length === 52) {
   ok('topic ของทุกข้อชี้ topic ที่มีจริง', qs.every(function (q) { return topicMap[q.topic]; }));
 
   ok('ทุกข้อมี choices ครบ 4 ตัวเลือก', qs.every(function (q) { return Array.isArray(q.choices) && q.choices.length === 4; }));
+  ok('ตัวเลือกทั้ง 4 ของทุกข้อไม่ซ้ำกัน', qs.every(function (q) { return new Set(q.choices).size === 4; }));
   ok('answer เป็น 0-3 ทุกข้อ', qs.every(function (q) { return Number.isInteger(q.answer) && q.answer >= 0 && q.answer <= 3; }));
   ok('explain ยาว ≥ 20 ตัวอักษรทุกข้อ', qs.every(function (q) { return typeof q.explain === 'string' && q.explain.length >= 20; }));
   ok('ทุกข้อมี question ไม่ว่าง', qs.every(function (q) { return typeof q.question === 'string' && q.question.length > 0; }));
