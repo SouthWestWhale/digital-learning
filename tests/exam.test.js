@@ -215,6 +215,52 @@ rl.setInput('r', 1);
 eq('q04: S=R=1 → forbidden Q=? ที่ขา LED', rl.outputValue('qLed'), '?');
 ok('q04: ใช้ SR_LATCH (NOR) เดิม', rl.nodes['rl'].comp === 'SR_LATCH' && !rl.nodes['rl'].def.isFF);
 
+/* ---------- บท exam-tff: T-FF นับสถานะ 2 บิต ขึ้น/ลง (q05, q39, q40, q46) ---------- */
+ok('exam-tff: ลงทะเบียนใน DL.LESSONS', !!DL.LESSONS['exam-tff']);
+ok('exam-tff: group = exam', DL.LESSONS['exam-tff'] && DL.LESSONS['exam-tff'].group === 'exam');
+eq('exam-tff: มี 2 วงจร', DL.LESSONS['exam-tff'] && DL.LESSONS['exam-tff'].circuits.length, 2);
+ok('exam-tff: html อ้างโจทย์ q46 + q39 + q05',
+   DL.LESSONS['exam-tff'].html.indexOf('docs/exam/q46.png') >= 0 &&
+   DL.LESSONS['exam-tff'].html.indexOf('docs/exam/q39.png') >= 0 &&
+   DL.LESSONS['exam-tff'].html.indexOf('docs/exam/q05.png') >= 0);
+ok('exam-tff: html สอนจำนวนสถานะ 2ⁿ (q40) + trace ตาราง characteristic (q05)',
+   DL.LESSONS['exam-tff'].html.indexOf('2ⁿ') >= 0 &&
+   DL.LESSONS['exam-tff'].html.indexOf('q40') >= 0 &&
+   DL.LESSONS['exam-tff'].html.indexOf('characteristic') >= 0 &&
+   DL.LESSONS['exam-tff'].html.indexOf('q05') >= 0);
+ok('exam-tff: summary มีสูตรจำ (2ⁿ, นับถอยหลัง, นับขึ้น)',
+   DL.LESSONS['exam-tff'].summary.indexOf('2ⁿ') >= 0 &&
+   DL.LESSONS['exam-tff'].summary.indexOf('นับถอยหลัง') >= 0 &&
+   DL.LESSONS['exam-tff'].summary.indexOf('นับขึ้น') >= 0);
+
+/* วงจร 1: q46 — 2×TFF T=1 sync (CLK รวม primary ทั้งคู่) → นับถอยหลัง 3,2,1,0 */
+var dwn = build('exam-tff', 0);
+dwn.setInput('en', 1);
+function tval(s) { return 2 * s.nodes['ff1'].state.q + s.nodes['ff0'].state.q; }
+eq('q46: เริ่ม 0', tval(dwn), 0);
+ok('q46: ทุก TFF เป็น primary clock (sync — ไม่มี clockFrom)',
+   ['ff0', 'ff1'].every(function (id) { return !dwn.nodes[id].opts.clockFrom; }));
+ok('q46: ff0 รับ T=1 จาก input en, ff1 รับ T จาก Q̄0 (ตามรูปข้อสอบ)',
+   dwn.wires.some(function (w) { return w.from.id === 'en' && w.to.id === 'ff0' && w.to.pin === 't'; }) &&
+   dwn.wires.some(function (w) { return w.from.id === 'ff0' && w.from.pin === 'qn' && w.to.id === 'ff1' && w.to.pin === 't'; }));
+var seqDown = [0];
+for (var dp = 1; dp <= 5; dp++) { pulse(dwn, 1); seqDown.push(tval(dwn)); }
+eq('q46: นับถอยหลัง 3,2,1,0 แล้ววนกลับ 3 (ตรงเฉลย 11,10,01,00)', seqDown.slice(1), [3,2,1,0,3]);
+
+/* วงจร 2: q39 — ff0 T=1, ff1 T ต่อจาก Q0, CLK รวม → นับขึ้น 1,2,3,0 */
+var upc = build('exam-tff', 1);
+upc.setInput('en', 1);
+function uval(s) { return 2 * s.nodes['ff1'].state.q + s.nodes['ff0'].state.q; }
+eq('q39: เริ่ม 0', uval(upc), 0);
+ok('q39: ff1 T ต่อจาก Q ของ ff0, ทุกตัว primary clock',
+   upc.wires.some(function (w) { return w.from.id === 'ff0' && w.from.pin === 'q' && w.to.id === 'ff1' && w.to.pin === 't'; }) &&
+   ['ff0', 'ff1'].every(function (id) { return !upc.nodes[id].opts.clockFrom; }));
+ok('q39: ff0 รับ T=1 จาก input en',
+   upc.wires.some(function (w) { return w.from.id === 'en' && w.to.id === 'ff0' && w.to.pin === 't'; }));
+var seqUp = [0];
+for (var up = 1; up <= 5; up++) { pulse(upc, 1); seqUp.push(uval(upc)); }
+eq('q39: นับขึ้น 1,2,3,0 แล้ววนกลับ 1 (mod-4)', seqUp.slice(1), [1,2,3,0,1]);
+
 /* ---------- สรุป ---------- */
 console.log('ผลทดสอบ exam.test.js: ' + pass + ' ผ่าน, ' + fail + ' พลาด');
 console.log(names.join('\n'));

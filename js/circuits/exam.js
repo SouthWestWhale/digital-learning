@@ -322,4 +322,80 @@
         steps: ['กด S̄ เป็น 0 เพื่อ set — ยิ่งกดต่ำยิ่งทำงาน Q ติดทันที', 'ปล่อยกลับ S̄=R̄=1 (ทั้งคู่ HIGH) — Q คง 1 = hold นี่คือข้อที่ข้อสอบหลอกให้ตอบ invalid แต่จริง ๆ คือ hold', 'กด R̄ เป็น 0 — Q ดับ = reset แล้วกด S̄=R̄=0 พร้อมกันดูสภาวะเสียสมมาตร Q=Q̄=1'] }
     ]
   });
+
+  /* ================= บท: T-FF นับสถานะ 2 บิต — ขึ้น/ลง (q05, q39, q40, q46) ================= */
+  DL.registerLesson({
+    id: 'exam-tff',
+    group: 'exam',
+    title: 'T-FF นับสถานะ 2 บิต — นับขึ้น/นับถอยหลัง',
+    subtitle: 'q05 · q39 · q40 · q46 — sync down counter (T1=Q̄0) vs up counter (T1=Q0), จำนวนสถานะ = 2ⁿ',
+    html:
+      '<h2>T-FF คืออะไร — ตัวหารความถี่</h2>' +
+      '<p><b>T-FF (Toggle FF)</b>: T=1 → ทุกขอบขึ้นของ clock ค่า Q จะ <b>สลับ</b> (0↔1) — ' +
+      'สัญญาณที่ Q จึงมีความถี่เป็น <b>ครึ่งหนึ่ง</b> ของ clock (หาร 2) ส่วน T=0 → Q คงค่าเดิม (hold) ' +
+      'จำสมการ characteristic: <b>Q₊ = T ⊕ Q = TQ̄ + T̄Q</b></p>' +
+
+      '<h2>โจทย์ q40 — FF 2 ตัวมีกี่สถานะ?</h2>' +
+      '<p>n ตัว FF เก็บบิตได้ n บิต → จำนวนสถานะ = <b>2ⁿ</b> — 2 ตัว = 2² = <b>4 สถานะ</b> (00, 01, 10, 11) ' +
+      'ตรงตามเฉลย q40 3 ตัว = 8, 4 ตัว = 16 ไปเรื่อย ๆ</p>' +
+
+      '<h2>โจทย์ q46 — Sync Down Counter: T0=1, T1=Q̄0 + Clock รวม</h2>' +
+      '<div class="doc-card"><img src="docs/exam/q46.png" alt="โจทย์ q46 — 2×T-FF sync down counter" style="max-width:360px;width:100%;border-radius:6px">' +
+      '<p><b>ทำไมถึงนับถอยหลัง:</b> ทั้ง 2 ตัวใช้ <b>Clock รวมสายเดียว (sync)</b> — ff0 รับ T=1 (สลับทุก pulse) ' +
+      'ส่วน ff1 รับ <b>T ต่อจาก Q̄0</b> (สลับเฉพาะตอน Q0=0) เริ่ม 00 → pulse แรก Q̄0=1 เลย ff1 พลิกด้วย ได้ <b>11</b> (3) ' +
+      '→ 10 (2) → 01 (1) → 00 (0) → วนกลับ 11 ค่า 2q1+q0 เดิน <b>3, 2, 1, 0, 3, …</b> ตรงเฉลยข้อสอบ 11, 10, 01, 00 ' +
+      '(จำ: counter sync <b>นับถอยหลังต่อ T จาก Q̄ ของตัวหน้า</b> ส่วนนับขึ้นต่อจาก Q ของตัวหน้า)</p></div>' +
+
+      '<h2>โจทย์ q39 — 2-bit UP Counter: T0=1, T1=Q0</h2>' +
+      '<div class="doc-card"><img src="docs/exam/q39.png" alt="โจทย์ q39 — 2-bit up counter" style="max-width:360px;width:100%;border-radius:6px">' +
+      '<p><b>แนวคิด:</b> ff0 รับ T=1 (สลับทุก pulse) ส่วน ff1 รับ <b>T ต่อจาก Q0</b> — ff1 จะสลับ <b>เฉพาะตอน Q0=1</b> ' +
+      '(จำลอง "ตัวถัดไปทำงานเมื่อตัวหน้าเพิ่งพลิก 1→0") เริ่ม 00 → 01 → 10 → 11 → กลับ 00 ค่า 2q1+q0 เดิน ' +
+      '<b>0, 1, 2, 3, 0, …</b> = นับขึ้น mod-4 พอดี</p></div>' +
+
+      '<h2>โจทย์ q05 — วิธี trace present → next state ด้วยตาราง characteristic</h2>' +
+      '<div class="doc-card"><img src="docs/exam/q05.png" alt="โจทย์ q05 — trace present to next state" style="max-width:360px;width:100%;border-radius:6px">' +
+      '<p>ข้อสอบชอบให้ตาราง present state พร้อมค่า T หรือ J,K ที่ป้อน แล้วถาม <b>next state</b> — วิธีทำ: ดูแถวละ 1 FF ' +
+      'แล้วใช้ตาราง characteristic ของชนิดนั้น: T-FF ใช้ <b>Q₊ = T ⊕ Q</b>, JK ใช้ (J=K=0 → hold, J=K=1 → toggle, J=1 → set, K=1 → reset) ' +
+      'ลองตัวอย่างเดียวให้จบ: present <b>Q1Q0 = 01</b> และโจทย์ให้ T1=1, T0=1 → Q1₊ = 1⊕0 = <b>1</b>, Q0₊ = 1⊕1 = <b>0</b> ' +
+      '→ next state = <b>10</b> ถ้าโจทย์ให้ J,K ก็เปลี่ยนไปใช้กฎ JK แทน (เช่น J1=1,K1=0 → set ให้ Q1₊=1 ไม่ต้องสนค่าเดิม) ' +
+      'ทำทีละบิตแล้วเขียนตอบ ไม่ต้องเดา</p></div>',
+
+    summary:
+      '<ul>' +
+      '<li>จำนวนสถานะ = <b>2ⁿ</b> — FF 2 ตัว = 4 สถานะ (q40), T-FF: Q₊ = T ⊕ Q (T=1 toggle หารความถี่ 2)</li>' +
+      '<li><b>T0=1, T1=Q̄0 + Clock รวม (sync)</b> = นับถอยหลัง 00→11→10→01→00 (q46 — ตัวถัดไป toggle เมื่อตัวหน้า = 0)</li>' +
+      '<li><b>T0=1, T1=Q0</b> + Clock รวม = นับขึ้น 00→01→10→11→00 (q39 — ตัวถัดไป toggle เมื่อตัวหน้า = 1)</li>' +
+      '<li>q05: trace ทีละบิตด้วยตาราง characteristic — T: Q₊ = T⊕Q ; JK: 00 hold, 11 toggle, 10 set, 01 reset</li>' +
+      '</ul>',
+    circuits: [
+      { title: 'โจทย์ q46: 2×T-FF sync down counter — T0=1, T1=Q̄0 + Clock รวม — นับถอยหลัง 3,2,1,0',
+        build: function (sim) {
+          sim.addInput('en', { x: 60, y: 150, label: 'T0=1' });
+          sim.addComponent('ff0', 'TFF', { x: 320, y: 150 });   // primary clock
+          sim.addComponent('ff1', 'TFF', { x: 500, y: 150 });   // primary clock — sync กัน
+          sim.addOutput('q0Led', { x: 320, y: 260, label: 'Q0' });
+          sim.addOutput('q1Led', { x: 500, y: 260, label: 'Q1' });
+          sim.wire('en', 'out', 'ff0', 't', [[160, 150], [220, 150], [220, 132]]);
+          sim.wire('ff0', 'qn', 'ff1', 't', [[390, 168], [440, 190], [440, 168]]);  // T1 = Q̄0 (ตามรูปข้อสอบ)
+          sim.wire('ff0', 'q', 'q0Led', 'in');
+          sim.wire('ff1', 'q', 'q1Led', 'in');
+          sim.explain('ทั้ง 2 ตัวเป็น primary clock (CLK รวม) — ff0 toggle ทุก pulse (T0=1) ส่วน ff1 toggle เฉพาะเมื่อ Q0=0 (T1=Q̄0): 00→11→10→01→00 ค่า 2Q1+Q0 เดิน 3,2,1,0 ตามเฉลย q46');
+        },
+        steps: ['เปิด T0=1 แล้วกด Pulse Clock 1 ครั้ง — Q̄0=1 ดึงให้ Q1 toggle ด้วย = 11 (3) เริ่มนับถอยหลัง', 'กดครบ 4 ครั้ง — อ่านค่า 2Q1+Q0: 3 → 2 (10) → 1 (01) → 0 (00) ตรงเฉลย 11,10,01,00', 'กดอีกครั้ง — วนกลับ 11 (3) วงจรนับถอยหลัง mod-4 ตลอดกาล'] },
+      { title: 'โจทย์ q39: 2-bit UP Counter — T0=1, T1=Q0 + Clock รวม — นับขึ้น 0,1,2,3',
+        build: function (sim) {
+          sim.addInput('en', { x: 60, y: 150, label: 'T0=1' });
+          sim.addComponent('ff0', 'TFF', { x: 320, y: 150 });   // primary clock
+          sim.addComponent('ff1', 'TFF', { x: 500, y: 150 });   // primary clock — sync กัน
+          sim.addOutput('q0Led', { x: 320, y: 260, label: 'Q0' });
+          sim.addOutput('q1Led', { x: 500, y: 260, label: 'Q1' });
+          sim.wire('en', 'out', 'ff0', 't', [[160, 150], [220, 150], [220, 132]]);
+          sim.wire('ff0', 'q', 'ff1', 't', [[390, 150], [440, 150], [440, 132]]);  // T1 = Q0
+          sim.wire('ff0', 'q', 'q0Led', 'in');
+          sim.wire('ff1', 'q', 'q1Led', 'in');
+          sim.explain('ff0 toggle ทุก pulse (T0=1) ส่วน ff1 toggle เฉพาะเมื่อ Q0=1 (T1=Q0) — 00→01→10→11→00 นับขึ้น mod-4 ตาม pattern ข้อสอบ q39');
+        },
+        steps: ['เปิด T0=1 แล้วกด Pulse Clock 1 ครั้ง — Q0 ติด = 01 (1)', 'กดครั้งที่ 2 — Q0 ดับและตอนนั้น Q0=1 อยู่ จึงดึงให้ Q1 toggle ด้วย = 10 (2)', 'กดครบ 4 ครั้ง — อ่าน 2Q1+Q0: 0 → 1 → 2 → 3 แล้วกดครั้งที่ 5 วนกลับ 0 = นับขึ้น mod-4 ตรงเฉลย q39'] }
+    ]
+  });
 })();
