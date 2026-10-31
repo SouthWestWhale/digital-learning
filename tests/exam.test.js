@@ -172,6 +172,49 @@ for (var q = 0; q < 12; q++) {
 ok('q41: 12 pulse ไม่เคยเป็น 6 หรือ 7', neverBad);
 eq('q41: วน 0..5 ซ้ำ 2 รอบครบ', seq6, [0,1,2,3,4,5,0,1,2,3,4,5,0]);
 
+/* ---------- บท exam-srlatch: SR Latch มุมข้อสอบ — NAND vs NOR (q04, q22, q28) ---------- */
+ok('exam-srlatch: ลงทะเบียนใน DL.LESSONS', !!DL.LESSONS['exam-srlatch']);
+ok('exam-srlatch: group = exam', DL.LESSONS['exam-srlatch'] && DL.LESSONS['exam-srlatch'].group === 'exam');
+eq('exam-srlatch: มี 2 วงจร', DL.LESSONS['exam-srlatch'] && DL.LESSONS['exam-srlatch'].circuits.length, 2);
+ok('exam-srlatch: html อ้างโจทย์ q04 + q22',
+   DL.LESSONS['exam-srlatch'].html.indexOf('docs/exam/q04.png') >= 0 &&
+   DL.LESSONS['exam-srlatch'].html.indexOf('docs/exam/q22.png') >= 0);
+ok('exam-srlatch: html มีตารางเทียบ NOR active-high / NAND active-low',
+   DL.LESSONS['exam-srlatch'].html.indexOf('<table') >= 0 &&
+   DL.LESSONS['exam-srlatch'].html.indexOf('active-high') >= 0 &&
+   DL.LESSONS['exam-srlatch'].html.indexOf('active-low') >= 0);
+ok('exam-srlatch: summary มีสมการ characteristic q28 (NOR: S + R̄Q, NAND: S̄ + RQ̄)',
+   DL.LESSONS['exam-srlatch'].summary.indexOf('Q₊ = S + R̄Q') >= 0 &&
+   DL.LESSONS['exam-srlatch'].summary.indexOf('Q₊ = S̄ + RQ̄') >= 0 &&
+   DL.LESSONS['exam-srlatch'].summary.indexOf('q28') >= 0);
+
+/* component SR_LATCH_NAND ลงทะเบียนถูกต้อง (active-low, transparent — ไม่ isFF) */
+ok('SR_LATCH_NAND: ลงทะเบียน component แล้ว',
+   typeof DL.LESSONS['exam-srlatch'] === 'object' &&
+   (function () { try { var t = new DL.CircuitSim(); t.addComponent('x', 'SR_LATCH_NAND', {}); return true; } catch (e) { return false; } })());
+
+/* วงจร 2: NAND latch (active-low) — set ด้วย S̄=0, hold เมื่อ S̄=R̄=1, reset ด้วย R̄=0, เสียสมมาตรที่ S̄=R̄=0 */
+var nl = build('exam-srlatch', 1);
+eq('q22: เริ่ม Q=0', nl.nodes['nl'].state.q, 0);
+nl.setInput('r', 1);            // S̄=0 (default), R̄=1 → set (active-low)
+eq('q22: S̄=0, R̄=1 → set Q=1 (ยิ่งกดต่ำยิ่งทำงาน)', nl.nodes['nl'].state.q, 1);
+nl.setInput('s', 1);            // S̄=R̄=1 → hold
+eq('q22: S̄=R̄=1 → hold Q คง 1 (ต่างจาก NOR ที่เป็น ?)', nl.nodes['nl'].state.q, 1);
+nl.setInput('r', 0);            // R̄=0 → reset
+eq('q22: R̄=0 → reset Q=0', nl.nodes['nl'].state.q, 0);
+nl.setInput('s', 0);            // S̄=R̄=0 → เสียสมมาตร
+eq('q22: S̄=R̄=0 → Q=1 และ Q̄=1 (เสียสมมาตร)', [nl.nodes['nl'].state.q, nl.nodes['nl'].state.qn], [1, 1]);
+ok('q22: NAND latch เป็น transparent (ไม่ isFF)', !nl.nodes['nl'].def.isFF);
+ok('q22: pinLabels S̄,R̄', nl.nodes['nl'].def.pinLabels.s === 'S̄' && nl.nodes['nl'].def.pinLabels.r === 'R̄');
+
+/* วงจร 1: NOR latch (SR_LATCH เดิม) — S=R=1 → '?' ที่ขา Q ของ LED */
+var rl = build('exam-srlatch', 0);
+rl.setInput('s', 1);
+eq('q04: S=1, R=0 → set Q=1', rl.outputValue('qLed'), 1);
+rl.setInput('r', 1);
+eq('q04: S=R=1 → forbidden Q=? ที่ขา LED', rl.outputValue('qLed'), '?');
+ok('q04: ใช้ SR_LATCH (NOR) เดิม', rl.nodes['rl'].comp === 'SR_LATCH' && !rl.nodes['rl'].def.isFF);
+
 /* ---------- สรุป ---------- */
 console.log('ผลทดสอบ exam.test.js: ' + pass + ' ผ่าน, ' + fail + ' พลาด');
 console.log(names.join('\n'));

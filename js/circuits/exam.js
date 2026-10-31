@@ -225,4 +225,101 @@
         steps: ['เปิด T=1 แล้วกด Pulse Clock — นับ 0,1,2,3,4,5 ตามเลขฐานสอง Q2Q1Q0', 'ที่ 5 (101) กดอีกครั้ง — FF กำลังจะเป็น 110 แต่ AND(Q2,Q1) ยิง CLR ล้างกลับ 000 ทันที', 'กดต่อไปเรื่อยๆ — วน 0..5 ตลอด ไม่เห็น 6 (110) หรือ 7 (111) เลย ตรงเฉลย q41'] }
     ]
   });
+  /* ================= Component: SR_LATCH_NAND — active-low SR latch (ข้อสอบ q22) =================
+   * ขา s,r แทน S̄,R̄ (active-low — กด 0 เพื่อ set/reset)
+   * s=0,r=1 → set ; s=1,r=0 → reset ; s=1,r=1 → hold ; s=0,r=0 → เสียสมมาตร (Q=Q̄=1 โชว์ให้เห็น)
+   * transparent เหมือน SR_LATCH (NOR) — ไม่ isFF เปลี่ยนทันทีตามอินพุต
+   */
+  DL.registerComponent('SR_LATCH_NAND', {
+    inputs: ['s', 'r'],
+    outputs: ['q', 'qn'],
+    w: 130, h: 64,
+    pinLabels: { s: 'S̄', r: 'R̄', q: 'Q', qn: 'Q̄' },
+    evalNode: function (node, v) {
+      var q;
+      if (!v.s && v.r) q = 1;                          // set (active-low)
+      else if (v.s && !v.r) q = 0;                     // reset
+      else if (v.s && v.r) q = node.state.q;           // hold — S̄=R̄=1 คือปกติ ไม่ใช่ forbidden!
+      else q = 1;                                      // S̄=R̄=0 → เสียสมมาตร Q=Q̄=1
+      node.state.q = q;
+      node.state.qn = (!v.s && !v.r) ? 1 : (q ? 0 : 1);
+      return { q: node.state.q, qn: node.state.qn };
+    },
+    initNode: function (node) { node.state = { q: 0, qn: 1 }; },
+    shape: DL.FFShape('SR Latch (NAND)'),
+    update: DL.FFUpdate
+  });
+
+  /* ================= บท: SR Latch มุมข้อสอบ — NAND vs NOR (q04, q22, q28) ================= */
+  DL.registerLesson({
+    id: 'exam-srlatch',
+    group: 'exam',
+    title: 'SR Latch มุมข้อสอบ — NAND vs NOR',
+    subtitle: 'q04 · q22 · q28 — ตัวล็อกแบบ active-high (NOR) กับ active-low (NAND) ต่างกันตรงไหน พร้อมจุดหลอกของข้อสอบ',
+    html:
+      '<h2>SR Latch 2 แบบที่ข้อสอบชอบออก</h2>' +
+      '<p>SR latch เป็นวงจรจำ 1 บิตที่ง่ายที่สุด แต่ข้อสอบหลอกเราด้วยการสลับ "ตารางค่าความจริง" ระหว่าง 2 แบบ: ' +
+      '<b>แบบ NOR</b> ใช้ S,R <b>active-high</b> (กด 1 เพื่อ set/reset) ส่วน <b>แบบ NAND</b> ใช้ S̄,R̄ <b>active-low</b> ' +
+      '(กด 0 เพื่อ set/reset) — ขาที่ชื่อมีขีดล่างพร้อม ๆ กันแปลว่า "ลอจิกต่ำ" คือสัญญาณทำงาน</p>' +
+
+      '<h2>โจทย์ q04 — SR Latch แบบ NOR (active-high)</h2>' +
+      '<div class="doc-card"><img src="docs/exam/q04.png" alt="โจทย์ q04" style="max-width:320px;width:100%;border-radius:6px">' +
+      '<p><b>แนวคิด:</b> NOR latch: <b>S=1, R=0 → set Q=1</b> (S "สั่งติด"), R=1 → reset, S=R=0 → hold, ' +
+      'และ <b>S=R=1 คือสถานะต้องห้าม</b> — Q กับ Q̄ พังไม่เป็นคู่กัน (แสดง ? ในวงจรข้างบน) ลองกด S=1 ดู</p></div>' +
+
+      '<h2>โจทย์ q22 — SR Latch แบบ NAND (active-low) — จุดหลอกของข้อสอบ!</h2>' +
+      '<div class="doc-card"><img src="docs/exam/q22.png" alt="โจทย์ q22" style="max-width:320px;width:100%;border-radius:6px">' +
+      '<p><b>กับดัก:</b> ข้อสอบถามค่าเมื่อ <b>S̄=R̄=1 (ทั้งคู่ HIGH)</b> คนที่จำตาราง NOR มัวสนีจะตอบ "สถานะต้องห้าม/indeterminate" ' +
+      '— <b>ผิด!</b> ใน NAND latch S̄=R̄=1 คือสภาวะ <b>ปกติของวงจร = hold</b> (คงค่าเดิมไว้) ' +
+      'เพราะเป็น active-low: ขาทั้งคู่เฉย ๆ สูงไว้ วงจรจึงล็อกค่าเดิม ต้อง "กดต่ำ" ถึงจะสั่งงาน</p>' +
+      '<div class="note">สังเกตในวงจรที่ 2: เริ่มมา Q=0 แล้วกด S̄ เป็น 0 → Q ติดทันที — <b>ยิ่งกดต่ำยิ่งทำงาน</b> ' +
+      'ส่วน S̄=R̄=0 พร้อมกันคือสภาวะเสียสมมาตร Q=Q̄=1 ทั้งคู่ (ลองกดดู)</div>' +
+
+      '<h2>ตารางเทียบ — จำให้แม่นก่อนสอบ</h2>' +
+      '<table border="1" cellpadding="6" style="border-collapse:collapse">' +
+      '<tr><th>วงจร</th><th>ชนิด</th><th>สั่ง set</th><th>สั่ง reset</th><th>เฉย ๆ (idle)</th><th>สถานะเสีย</th></tr>' +
+      '<tr><td>NOR latch</td><td>active-high</td><td>S=1</td><td>R=1</td><td>S=R=0 → hold</td><td>S=R=1 → ⚠ Q=?</td></tr>' +
+      '<tr><td>NAND latch</td><td>active-low</td><td>S̄=0</td><td>R̄=0</td><td>S̄=R̄=1 → hold</td><td>S̄=R̄=0 → เสียสมมาตร Q=Q̄=1</td></tr>' +
+      '</table>' +
+      '<p>สรุปสั้น ๆ: <b>NOR ห้ามที่ "1 คู่"</b> (S=R=1 → ?) แต่ <b>NAND hold ที่ "1 คู่"</b> (S̄=R̄=1) แล้วไปเสียที่ "0 คู่" แทน</p>',
+
+    summary:
+      '<ul>' +
+      '<li>NOR latch (q04): S=1 → set, R=1 → reset, S=R=0 → hold, <b>S=R=1 → ⚠ forbidden Q=?</b></li>' +
+      '<li>NAND latch (q22): active-low — S̄=0 → set, R̄=0 → reset, <b>S̄=R̄=1 → hold (ไม่ใช่ invalid!)</b>, S̄=R̄=0 → เสียสมมาตร Q=Q̄=1</li>' +
+      '<li>สมการ characteristic (q28): NOR: <b>Q₊ = S + R̄Q</b> — NAND (active-low): <b>Q₊ = S̄ + RQ̄</b> (จำตามรูปที่ข้อสอบให้ตัวเลือกมา)</li>' +
+      '<li>เคล็ดลับ: เห็นขีดบน S̄,R̄ = คิด active-low ทันที ตาราง NOR นำมาใช้ตรง ๆ ไม่ได้</li>' +
+      '</ul>',
+
+    circuits: [
+      { title: 'โจทย์ q04: SR Latch แบบ NOR (active-high) — S=1 set, R=1 reset, S=R=1 → ?',
+        build: function (sim) {
+          sim.addInput('s', { x: 60, y: 110, label: 'S' });
+          sim.addInput('r', { x: 60, y: 200, label: 'R' });
+          sim.addComponent('rl', 'SR_LATCH', { x: 300, y: 155 });
+          sim.addOutput('qLed', { x: 460, y: 120, label: 'Q' });
+          sim.addOutput('qnLed', { x: 460, y: 200, label: 'Q̄' });
+          sim.wire('s', 'out', 'rl', 's', [[140, 110], [220, 110], [220, 137]]);
+          sim.wire('r', 'out', 'rl', 'r', [[140, 200], [220, 200], [220, 173]]);
+          sim.wire('rl', 'q', 'qLed', 'in');
+          sim.wire('rl', 'qn', 'qnLed', 'in');
+          sim.explain('NOR latch active-high: S=1 → Q=1, R=1 → Q=0, S=R=0 → hold — และ S=R=1 คือสถานะต้องห้าม (Q โชว์ ?)');
+        },
+        steps: ['กด S เป็น 1 (R ปล่อย 0) — Q ติดทันที = set ตามเฉลย q04 (S=1,R=0 → Q=1)', 'ปล่อย S=0 — Q ยังคง 1 = hold วงจรจำค่าไว้', 'กด R เป็น 1 — Q ดับ = reset แล้วลองกด S=1 พร้อม R=1 เพื่อดูสถานะต้องห้าม ? ด้วยตาตัวเอง'] },
+      { title: 'โจทย์ q22: SR Latch แบบ NAND (active-low) — S̄=R̄=1 → hold ไม่ใช่ invalid',
+        build: function (sim) {
+          sim.addInput('s', { x: 60, y: 110, label: 'S̄ (กด 0 = set)' });
+          sim.addInput('r', { x: 60, y: 200, label: 'R̄ (กด 0 = reset)' });
+          sim.addComponent('nl', 'SR_LATCH_NAND', { x: 320, y: 155 });
+          sim.addOutput('qLed', { x: 480, y: 120, label: 'Q' });
+          sim.addOutput('qnLed', { x: 480, y: 200, label: 'Q̄' });
+          sim.wire('s', 'out', 'nl', 's', [[160, 110], [240, 110], [240, 137]]);
+          sim.wire('r', 'out', 'nl', 'r', [[160, 200], [240, 200], [240, 173]]);
+          sim.wire('nl', 'q', 'qLed', 'in');
+          sim.wire('nl', 'qn', 'qnLed', 'in');
+          sim.explain('NAND latch active-low: S̄=0 → set, R̄=0 → reset, S̄=R̄=1 → hold (ปกติ!) — S̄=R̄=0 → เสียสมมาตร Q=Q̄=1');
+        },
+        steps: ['กด S̄ เป็น 0 เพื่อ set — ยิ่งกดต่ำยิ่งทำงาน Q ติดทันที', 'ปล่อยกลับ S̄=R̄=1 (ทั้งคู่ HIGH) — Q คง 1 = hold นี่คือข้อที่ข้อสอบหลอกให้ตอบ invalid แต่จริง ๆ คือ hold', 'กด R̄ เป็น 0 — Q ดับ = reset แล้วกด S̄=R̄=0 พร้อมกันดูสภาวะเสียสมมาตร Q=Q̄=1'] }
+    ]
+  });
 })();
