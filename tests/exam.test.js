@@ -425,6 +425,43 @@ for (var w47 = 0; w47 < 12; w47++) { pulse(s47, 1); walk.push(digit47(s47)); }
 eq('q45: pulse ต่อจาก 4 → 5,6,7,8,9 แล้ววนกลับ 0,1,2,3,4,5 (mod-10 — จอตามตัวนับทุกจังหวะ)', walk, [5,6,7,8,9,0,1,2,3,4,5,6]);
 ok('q45: หลัง 9 → กลับ 0 ทันที (ไม่มี 10-15 ค้าง)', walk[4] === 9 && walk[5] === 0);
 
+/* ---------- บท exam-dac: WEIGHTED_DAC — DAC คำนวณ Vout แบบข้อสอบ (q21, q31, q33, q52) ---------- */
+ok('exam-dac: ลงทะเบียนใน DL.LESSONS', !!DL.LESSONS['exam-dac']);
+ok('exam-dac: group = exam', DL.LESSONS['exam-dac'] && DL.LESSONS['exam-dac'].group === 'exam');
+eq('exam-dac: มี 1 วงจร', DL.LESSONS['exam-dac'] && DL.LESSONS['exam-dac'].circuits.length, 1);
+ok('exam-dac: html ฝังโจทย์ q31 + q33 + q52',
+   DL.LESSONS['exam-dac'].html.indexOf('docs/exam/q31.png') >= 0 &&
+   DL.LESSONS['exam-dac'].html.indexOf('docs/exam/q33.png') >= 0 &&
+   DL.LESSONS['exam-dac'].html.indexOf('docs/exam/q52.png') >= 0);
+ok('exam-dac: html มีกล่องทฤษฎี q21 (DNL) + q44 (settling) + q24 (Nyquist)',
+   DL.LESSONS['exam-dac'].html.indexOf('บันไดไม่เท่ากัน') >= 0 &&
+   DL.LESSONS['exam-dac'].html.indexOf('settling') >= 0 &&
+   DL.LESSONS['exam-dac'].html.indexOf('Nyquist') >= 0);
+ok('exam-dac: summary มีสูตร + 3 ทฤษฎี (DNL, settling, Nyquist)',
+   DL.LESSONS['exam-dac'].summary.indexOf('Rf') >= 0 &&
+   DL.LESSONS['exam-dac'].summary.indexOf('บันไดไม่เท่ากัน') >= 0 &&
+   DL.LESSONS['exam-dac'].summary.indexOf('±½LSB') >= 0 &&
+   DL.LESSONS['exam-dac'].summary.indexOf('2×') >= 0);
+
+/* วงจร: สวิตช์ d0-d3 → WEIGHTED_DAC → โชว์ Vout บนตัว component */
+var sdac = build('exam-dac', 0);
+function vdac(s) { return s.nodes['dac'].out.v; }
+function near(name, got, want) {
+  ok(name + ' (got ' + got + ', want ' + want + ')', Math.abs(got - want) < 1e-9);
+}
+sdac.setInput('d1', 1); sdac.evaluate();
+near('q33: d1=1 → Vout = −0.5 V', vdac(sdac), -0.5);
+near('q33: d1=d3=1 → Vout = −2.5 V (เฉลยข้อสอบ)', (sdac.setInput('d3', 1), sdac.evaluate(), vdac(sdac)), -2.5);
+near('q31: d0=d1=d3=1 (D2=0) → Vout = −2.75 V (เฉลย q31)', (sdac.setInput('d0', 1), sdac.evaluate(), vdac(sdac)), -2.75);
+near('ทุกบิต = 1 → Vout = −3.75 V', (sdac.setInput('d2', 1), sdac.evaluate(), vdac(sdac)), -3.75);
+near('ปิดหมด → Vout = 0 V', (sdac.setInput('d0', 0), sdac.setInput('d1', 0), sdac.setInput('d2', 0), sdac.setInput('d3', 0), sdac.evaluate(), vdac(sdac)), 0);
+ok('WEIGHTED_DAC: สูตรตรง spec — d0/200k, d1/100k, d2/50k, d3/25k × (−Rf·Vref), Rf=10k Vref=5',
+   sdac.nodes['dac'].def.inputs.join(',') === 'd0,d1,d2,d3' && sdac.nodes['dac'].def.outputs.join(',') === 'v');
+ok('WEIGHTED_DAC: shape โชว์ Vout ทศนิยม 2 ตำแหน่ง (mirror VMETER)',
+   typeof sdac.nodes['dac'].def.shape === 'function' && typeof sdac.nodes['dac'].def.update === 'function');
+ok('q52: html มีวิธีอ่านบันไดสวิตช์ SW11 = 1011 (MSB→LSB: DCBA)',
+   DL.LESSONS['exam-dac'].html.indexOf('1011') >= 0);
+
 /* ---------- สรุป ---------- */
 console.log('ผลทดสอบ exam.test.js: ' + pass + ' ผ่าน, ' + fail + ' พลาด');
 console.log(names.join('\n'));

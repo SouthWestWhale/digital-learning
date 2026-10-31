@@ -703,4 +703,109 @@
         steps: ['เปิด EN กด pulse จน Q3Q2Q1Q0 = 0100 (เลข 4) — นับไฟ a-g: ติดแค่ b,c,f,g ตรงข้อ q13', 'ไล่ pulse ต่อ — จอวน 0-9 แล้วกลับ 0 เพราะ AND(Q3,Q1) ยิง CLR ตอนจะเป็น 10 (ตรง q45 ข้อ d)', 'เทียบไฟ a-g กับจอ SEVENSEG ทุกจังหวะ — ตรรกะ decoder จาก gate ต้องได้ลวดลายเดียวกัน'] }
     ]
   });
+  /* ================= บท: Binary-Weighted DAC — คำนวณ Vout แบบข้อสอบ (q21, q31, q33, q52) ================= */
+
+  var S = function () { return DL.Render.svgEl.apply(null, arguments); };
+
+  /* --- WEIGHTED_DAC: binary-weighted resistor DAC → inverting op-amp (วงจร q31/q33) ---
+   * v = −Rf·Vref·(d0/200k + d1/100k + d2/50k + d3/25k), Rf=10k, Vref=5
+   * ค่า v เป็นตัวเลข (numeric) — ลอกแนวทาง R2RDAC/VMETER ใน course.js */
+  DL.registerComponent('WEIGHTED_DAC', {
+    inputs: ['d0', 'd1', 'd2', 'd3'], outputs: ['v'], w: 160, h: 130,
+    pinLabels: { d0: 'D0 (200k)', d1: 'D1 (100k)', d2: 'D2 (50k)', d3: 'D3 (25k)', v: 'Vout' },
+    eval: function (v) {
+      var Rf = 10e3, Vref = 5;
+      return { v: -Rf * Vref * ((v.d0 ? 1 : 0) / 200e3 + (v.d1 ? 1 : 0) / 100e3 +
+                                (v.d2 ? 1 : 0) / 50e3 + (v.d3 ? 1 : 0) / 25e3) };
+    },
+    shape: function (g, node) {
+      g.appendChild(S('rect', { x: -80, y: -65, width: 160, height: 130, rx: 6, 'class': 'comp-body' }));
+      g.appendChild(S('rect', { x: -68, y: -48, width: 136, height: 42, rx: 4, fill: '#0f172a' }));
+      var txt = S('text', { x: 0, y: -20, 'text-anchor': 'middle', fill: '#4ade80',
+                            'font-family': 'monospace', 'font-size': '17px' });
+      txt.setAttribute('data-vtxt', '1');
+      g.appendChild(txt);
+      var lab = S('text', { x: 0, y: 30, 'text-anchor': 'middle', 'class': 'comp-pin-label', 'font-size': '12px' });
+      lab.textContent = 'binary-weighted DAC';
+      g.appendChild(lab);
+      var lab2 = S('text', { x: 0, y: 48, 'text-anchor': 'middle', 'class': 'comp-pin-label', 'font-size': '11px' });
+      lab2.textContent = '200k/100k/50k/25k · Rf=10k';
+      g.appendChild(lab2);
+    },
+    update: function (g, node) {
+      var v = (node.out && typeof node.out.v === 'number') ? node.out.v : 0;
+      var txt = g.querySelector('[data-vtxt]');
+      if (txt) txt.textContent = 'Vout = ' + v.toFixed(2) + ' V';
+    }
+  });
+
+  DL.registerLesson({
+    id: 'exam-dac',
+    group: 'exam',
+    title: 'Binary-Weighted DAC — คำนวณ Vout แบบข้อสอบ',
+    subtitle: 'ข้อสอบ q21 · q31 · q33 · q52 — วงจรตัวต้านทานถ่วงน้ำหนัก + op-amp กลับขั้ว แล้วกดสวิตช์ดู Vout จริง',
+    html:
+      '<h2>วงจร DAC แบบ binary-weighted + inverting op-amp</h2>' +
+      '<p>ตัวต้านทาน 4 ตัวถ่วงน้ำหนักตามบิต (200k, 100k, 50k, 25k — แต่ละบิต "น้ำหนักเป็น 2 เท่า" ของบิตก่อน) ' +
+      'รวมสัญญาณเข้า <b>summing amplifier</b> แบบกลับขั้ว สูตรเดียวจบ:</p>' +
+      '<div class="note"><b>Vout = −Rf · Vref · (D0/200k + D1/100k + D2/50k + D3/25k)</b> &nbsp;โดย Rf = 10 kΩ, Vref = 5 V ' +
+      '— แทนเฉพาะบิตที่เป็น 1 (บิตที่เป็น 0 ตัดทิ้ง) แล้วรวมเศษส่วนก่อนคูณ</div>' +
+
+      '<h2>วิธีคิดในห้องสอบ (แบบเขียนลงกระดาษ)</h2>' +
+      '<p>ตัวคูณรวม <b>−Rf·Vref = −10k×5 = −50k</b> คิดเป็นเศษส่วนทีละบิตแล้วบวกก่อนคูณทีเดียวจบ ' +
+      'ตัวอย่างตรง q33 (D1 และ D3 = 1):</p>' +
+      '<p style="font-family:monospace;background:#f1f5f9;padding:8px;border-radius:6px">' +
+      'Vout = −10k·5·(1/100k + 1/25k)<br>' +
+      '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= −50k·(0.00001 + 0.00004)<br>' +
+      '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= −50k·0.00005 = <b>−2.5 V</b> ✓ (ตรงเฉลย q33 ข้อ a)</p>' +
+
+      '<h2>โจทย์ q33 — D3, D1 = 5 V ส่วน D2, D0 = 0 V</h2>' +
+      '<div class="doc-card"><img src="docs/exam/q33.png" alt="โจทย์ q33" style="max-width:320px;width:100%;border-radius:6px">' +
+      '<p><b>เฉลย −2.5 V (ข้อ a)</b> — ตัด D2, D0 ทิ้งเพราะเป็น 0V เหลือ D3/25k + D1/100k ' +
+      'ลองในวงจรด้านล่าง: กด D1 + D3 แล้วอ่านกล่อง Vout จะขึ้น −2.50 พอดี</p></div>' +
+
+      '<h2>โจทย์ q31 — D3, D1, D0 = 1 ส่วน D2 = 0</h2>' +
+      '<div class="doc-card"><img src="docs/exam/q31.png" alt="โจทย์ q31" style="max-width:320px;width:100%;border-radius:6px">' +
+      '<p><b>เฉลย −2.75 V (ข้อ d)</b> — −50k·(1/25k + 1/100k + 1/200k) = −50k·(0.04 + 0.01 + 0.005) = ' +
+      '−50k·0.055 = <b>−2.75 V</b> สังเกตว่า q31 คือ q33 "บวกบิต D0 เพิ่ม 1 ตัว" คำตอบขยับจาก −2.5 → −2.75 ' +
+      '(น้ำหนัก D0 = −0.25 V) ลองกด D0 + D1 + D3 ในวงจรเทียบได้</p></div>' +
+
+      '<h2>โจทย์ q52 — บันไดสวิตช์: อ่านตำแหน่งเป็นเลขฐานสอง</h2>' +
+      '<div class="doc-card"><img src="docs/exam/q52.png" alt="โจทย์ q52" style="max-width:320px;width:100%;border-radius:6px">' +
+      '<p>บันไดสวิตช์ 16 ตัว (10K×16) ป้อน gate AND 4 ชุด ออกเป็นบิต <b>D C B A (MSB→LSB)</b> ' +
+      'หลักอ่าน: <b>ตำแหน่งสวิตช์ = น้ำหนักบิต</b> — SW ที่ปิดอยู่บอกค่าเลขฐานสองตรงๆ ' +
+      'โจทย์ถาม SW11 (นับจากซ้าย สวิตช์ที่ 11) → เขียนเป็นเลข 4 บิตได้ <b>1011</b> (ตอบข้อ b) ' +
+      'วิธีจำ: 16 สวิตช์ = ค่า 1111 (15) ที่ SW15, ลำดับลงมาทีละ 1 — SW11 = 1011</p></div>' +
+
+      '<h2>ทฤษฎี 3 ข้อที่ออกโดยไม่มีวงจร</h2>' +
+      '<div class="note"><b>q21 — differential nonlinearity (DNL):</b> ความผิดพลาดของ DAC ที่ทำให้ ' +
+      '<b>บันไดไม่เท่ากัน</b> (ระยะ step แต่ละขั้นไม่เท่ากัน) — บางขั้นกว้างบางขั้นแคบ (ideal ต้องกว้าง = 1 LSB เท่ากันทุกขั้น)</div>' +
+      '<div class="note"><b>q44 — settling time:</b> เวลาตั้งตัว = เวลาที่เอาต์พุตวิ่งเข้าใกล้ค่าเป้า ' +
+      '<b>ภายใน ±½ LSB แล้วอยู่กับที่</b> — ในกราฟข้อสอบคือช่วง <b>t2</b> (จุดเริ่มเข้าแถบ ±½LSB แล้วไม่หลุดอีก)</div>' +
+      '<div class="note"><b>q24 — Nyquist:</b> อัตรา sampling ต้อง ≥ <b>2×ความถี่สูงสุด (f_max)</b> ' +
+      'ของสัญญาณ — สัญญาณสูงสุด 3 kHz ต้อง sample ≥ <b>6 kHz</b> (sample ต่ำกว่านั้นเกิด aliasing)</div>',
+    summary:
+      '<ul>' +
+      '<li>สูตร summing amp: <b>Vout = −Rf·Vref·Σ(Di/Ri)</b> = −10k×5×(D0/200k + D1/100k + D2/50k + D3/25k) — แทนเฉพาะบิตที่เป็น 1 แล้วรวมเศษส่วนก่อนคูณ (q31 −2.75 V, q33 −2.5 V)</li>' +
+      '<li>q21: DNL = ความผิดพลาดที่ทำให้ <b>บันไดไม่เท่ากัน</b> (step ≠ 1 LSB เท่ากันทุกขั้น)</li>' +
+      '<li>q44: settling time = จุดที่เอาต์พุตเข้าแถบ <b>±½LSB แล้วอยู่กับที่</b> (กราฟข้อสอบคือ t2)</li>' +
+      '<li>q24: Nyquist — sampling ≥ <b>2×f_max</b> (3 kHz → 6 kHz)</li>' +
+      '</ul>',
+    circuits: [
+      { title: 'โจทย์ q31/q33: สวิตช์ D0-D3 → binary-weighted DAC → Vout บนตัววงจร',
+        build: function (sim) {
+          sim.addInput('d0', { x: 60, y: 40, label: 'D0 (200k)' });
+          sim.addInput('d1', { x: 60, y: 100, label: 'D1 (100k)' });
+          sim.addInput('d2', { x: 60, y: 160, label: 'D2 (50k)' });
+          sim.addInput('d3', { x: 60, y: 220, label: 'D3 (25k)' });
+          sim.addComponent('dac', 'WEIGHTED_DAC', { x: 330, y: 130 });
+          sim.wire('d0', 'out', 'dac', 'd0', [[180, 40], [180, 86]]);
+          sim.wire('d1', 'out', 'dac', 'd1', [[210, 100], [210, 108]]);
+          sim.wire('d2', 'out', 'dac', 'd2', [[240, 160], [240, 130]]);
+          sim.wire('d3', 'out', 'dac', 'd3', [[270, 220], [270, 152]]);
+          sim.explain('กดสวิตช์บิตที่เป็น 1 แล้วอ่านกล่อง Vout — D1+D3 = −2.50 V (q33), D0+D1+D3 = −2.75 V (q31), ทุกบิต = −3.75 V');
+        },
+        steps: ['กด D3 อย่างเดียว → Vout = −2.00 V (น้ำหนักบิตสูงสุด: −50k/25k = −2)', 'กด D1 + D3 → Vout = −2.50 V ตรงเฉลย q33 ข้อ a', 'กด D0 + D1 + D3 (D2 ปล่อย 0) → Vout = −2.75 V ตรงเฉลย q31 ข้อ d', 'กดทุกบิต → Vout = −3.75 V แล้วลองคำนวณด้วยมือ −50k×(0.005+0.01+0.02+0.04) เทียบกับจอ'] }
+    ]
+  });
 })();
