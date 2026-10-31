@@ -10,7 +10,12 @@ for free via page.get_image_rects().  Details handled:
   partially.  The image drawn LATER is on top; for the underlying card we
   render the full rect and fill the overlap rectangle with the cream page
   colour, so no fragment of the neighbouring card shows.
-- Page 17 is a photo of a monitor (not a question card) and is excluded.
+- Page 16 is a photo of a monitor; the one exam question shown on it is cut
+  with a manual box (MANUAL_BOXES).
+- The "จงเขียนวงจรนี้เป็นวงจรอะไร" 7476 shift-register question appears three
+  times in the PDF (pages 2, 5 and 12 — repeated Moodle screenshots with
+  shuffled options).  Only the first two appearances are real exam questions;
+  the page-12 repeat is skipped (SKIP_RECTS).
 
 Output: docs/exam/q01.png .. q52.png (top->bottom, left->right per page),
 plus temporary contact sheets docs/exam/_contact_NN.png (NOT committed).
@@ -28,13 +33,22 @@ DPI = 130
 CONTACT_COLS = 4
 PER_SHEET = 16
 
-# Pages whose images are NOT question cards (page 16 = photo of a monitor).
-EXCLUDED_PAGES = {16}
+EXCLUDED_PAGES = set()
 
 # Manual overrides: {page_number_1based: [(x0, y0, x1, y1), ...]}
 # Coordinates are fractions 0-1 of the page.  When a page is listed here the
 # automatic detection is skipped for that page and these boxes are used instead.
-MANUAL_BOXES = {}
+# Page 16 = photo of a monitor; box = the question card shown on the screen.
+MANUAL_BOXES = {
+    16: [(0.05, 0.19, 1.00, 0.78)],
+}
+
+# Detected rects to ignore: {(page_1based, (x0, y0, x1, y1))} in PDF points,
+# matched with a tolerance of 3pt.  Page 12's first card is a repeated
+# screenshot of the same 7476 question already cropped from pages 2 and 5.
+SKIP_RECTS = {
+    (12, (25, 29, 657, 357)),
+}
 
 CREAM = (245, 240, 225)  # page background colour used to erase intrusions
 
@@ -86,7 +100,13 @@ def main():
                                    x1 * pr.width, y1 * pr.height), None)
                 for (x0, y0, x1, y1) in MANUAL_BOXES[pno])
         else:
-            entries.extend((pno, r, f) for (r, f) in detect_boxes(page))
+            for (r, f) in detect_boxes(page):
+                if any(pno == sp and abs(r.x0 - sx) < 3 and abs(r.y0 - sy) < 3
+                       and abs(r.x1 - ex) < 3 and abs(r.y1 - ey) < 3
+                       for (sp, (sx, sy, ex, ey)) in SKIP_RECTS):
+                    print(f"skip repeated card on page {pno} ({r.x0:.0f},{r.y0:.0f})")
+                    continue
+                entries.append((pno, r, f))
     # reading order: rows of ~50pt, then left->right
     entries.sort(key=lambda e: (e[0], round(e[1].y0 / 50), e[1].x0))
 
