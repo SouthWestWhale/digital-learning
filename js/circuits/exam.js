@@ -600,4 +600,107 @@
         steps: ['ตั้ง s=0, x=1 แล้วกด Pulse Clock — Q ติด เพราะ s=0 ให้ MUX เลือกสาย x ไปที่ D', 'เปลี่ยน s=1, y=0 แล้วกด Pulse Clock — Q ดับ เพราะตอนนี้ MUX สลับไปเลือกสาย y แทน', 'สลับ s กลับไปมาพร้อมเปลี่ยน x/y แล้วกด pulse ต่อ — เห็นว่า Q(next) ตาม "สายที่ s เลือก" เสมอ = state diagram ของ q43 กำลังทำงานต่อหน้าตา'] }
     ]
   });
+
+
+  /* ================= บท: IC 7447 + จอ 7 ผ่วน พร้อม counter (q13, q45) ================= */
+  DL.registerLesson({
+    id: 'exam-7447',
+    group: 'exam',
+    title: 'IC 7447 + จอ 7 ผ่วน กับ Counter — กดจับวงจรจริง',
+    subtitle: 'ข้อสอบ q13 · q45 — BCD→7-segment (active-low) และ counter ต่อจอแสดงเลข',
+    html:
+      '<h2>จอ 7 ผ่วน: common anode กับ common cathode</h2>' +
+      '<p>จอ 7-segment มีไฟ LED 7 ช่อง (a–g) ที่ต่อร่วมกันที่ขาเดียว ถ้าขาร่วมต่อ <b>+Vcc</b> เรียก ' +
+      '<b>common anode</b> — แต่ละช่องจะติดเมื่อถูกดึงลง <b>0 (low)</b> ถ้าขาร่วมต่อ <b>GND</b> เรียก ' +
+      '<b>common cathode</b> — ช่องติดเมื่อจ่าย <b>1 (high)</b> ตัวเลข "4" ใช้ช่อง <b>b, c, f, g</b> เท่านั้น</p>' +
+
+      '<h2>โจทย์ q13 — IC 7447 เป็น decoder active-low</h2>' +
+      '<div class="doc-card"><img src="docs/exam/q13.png" alt="โจทย์ q13" style="max-width:320px;width:100%;border-radius:6px">' +
+      '<p><b>แนวคิด:</b> 7447 = BCD-to-7-segment decoder สำหรับจอ <b>common anode</b> แบบ ' +
+      '<b>active-low</b>: ขา a–g เป็นเอาต์พุตที่ <b>ติด (สว่าง) เมื่อ output = 0</b> (ดึงกระแสจาก +Vcc ผ่าน LED) ' +
+      'ขาควบคุม: <b>LT</b> (Lamp Test — กด 0 เพื่อจุดทุกช่องทดสอบจอ), <b>RBI</b> (Ripple Blanking In — ลบเลข 0 นำหน้า), ' +
+      '<b>BIO/RBO</b> (Blanking In/Out — ดับจอทั้งหมด)</p>' +
+      '<p>โจทย์ป้อน BCD = <b>0100</b> (D C B A) ให้ 7447 ขับจอ common anode — 0100₂ = เลข <b>4</b> ' +
+      'จอจึงสว่างช่อง b, c, f, g (ตอบข้อ c. ของข้อสอบ) ลองกดสวิตช์ในวงจรของบท decoder เทียบดูได้</p></div>' +
+      '<div class="note">ตัวจริง 7447 เอาต์พุตกลับ (segment ติดเมื่อ output = 0) วงจรในบทนี้สร้าง decoder เหมือนกัน ' +
+      'จาก gate AND/OR/NOT แต่แสดงผลแบบ active-high ให้อ่านง่าย — ลวดลายช่องที่ติดเหมือนกันทุกเลข</div>' +
+
+      '<h2>โจทย์ q45 — Counter + 7447 + จอ</h2>' +
+      '<div class="doc-card"><img src="docs/exam/q45.png" alt="โจทย์ q45" style="max-width:320px;width:100%;border-radius:6px">' +
+      '<p><b>แนวคิด:</b> วงจรใช้ counter IC 7493/74LS93 (4 บิต) ป้อน BCD เข้า 7447/7448 แล้วขับจอ 7-segment ' +
+      'counter 4 บิต <b>นับได้ 16 ค่า</b> (0000–1111) แต่ถ้าต่อเป็น <b>mod-10</b> (ใน 7493 คือ R01·R02 กลับ Q_B·Q_D ' +
+      'มาล้าง) จะวนแค่ <b>0–9</b> จอจึงโชว์ 0,1,2,…,9 แล้วกลับ 0 วนตลอด ตอบข้อสอบ: นับได้ 10 ตัวเลข (ข้อ d)</p></div>',
+    summary:
+      '<ul>' +
+      '<li>7447 ใช้กับจอ <b>common anode</b> เป็น <b>active-low</b> — segment ติดเมื่อ output = 0 (q13)</li>' +
+      '<li>BCD 0100 → จอโชว์ 4 (ช่อง b,c,f,g) — อ่านค่า D C B A เป็นเลขฐานสองก่อน</li>' +
+      '<li>LT = ทดสอบจุดทุกช่อง, RBI = ลบ 0 นำหน้า, BIO/RBO = ดับจอ (q13)</li>' +
+      '<li>counter 4 บิต + 7447 + จอ: นับได้ 16 แต่ต่อ mod-10 แล้วโชว์วน 0–9 (q45)</li>' +
+      '</ul>',
+    circuits: [
+      { title: 'โจทย์ q45: Decade Counter (mod-10) → decoder แบบ gate → จอ 7 ผ่วน',
+        wide: true,
+        build: function (sim) {
+          /* --- ตัวนับ decade 4×TFF (pattern เดียวกับ course.js บท Counter) --- */
+          sim.addInput('en', { x: 60, y: 220, label: 'EN' });
+          var xs = [270, 400, 530, 660];
+          for (var i = 0; i < 4; i++) {
+            sim.addComponent('ff' + i, 'TFF', { x: xs[i], y: 120,
+              clockFrom: i > 0 ? ('ff' + (i - 1) + ':qn') : undefined });
+            sim.addOutput('q' + i + 'Led', { x: xs[i], y: 230, label: 'Q' + i });
+            sim.wire('en', 'out', 'ff' + i, 't', [[150 + i * 8, 220], [150 + i * 8, 90 + i * 8]]);
+            sim.wire('ff' + i, 'q', 'q' + i + 'Led', 'in');
+          }
+          // CLR = AND(Q3, Q1) — ตรวจจับค่า 10 (1010) แล้วล้าง → mod-10
+          sim.addGate('clr1', 'AND', { x: 465, y: 320, n: 2 });
+          sim.wire('ff3', 'q', 'clr1', 0, [[660, 140], [700, 140], [700, 300], [430, 300], [430, 313]]);
+          sim.wire('ff1', 'q', 'clr1', 1, [[400, 140], [440, 140], [440, 327]]);
+          for (var j = 0; j < 4; j++) {
+            sim.wire('clr1', 'out', 'ff' + j, 'clr', [[520, 320], [540, 320], [540, 250 - j * 22]]);
+          }
+
+          /* --- decoder จาก gate (mirror ตรรกะ SEG_TABLE ของ SEVENSEG ใน basics.js) --- */
+          // NOT กลับบิต BCD แต่ละตัว (7447 ถอดรหัสทั้ง Q และ Q̄)
+          var src3 = ['ff3', 'ff2', 'ff1', 'ff0'];
+          var pin3 = { ff3: 'q', ff2: 'q', ff1: 'q', ff0: 'q' };
+          for (var b = 0; b < 4; b++) {
+            sim.addGate('n' + b, 'NOT', { x: 740 + b * 70, y: 320 });
+            sim.wire('ff' + b, 'q', 'n' + b, 0, [[xs[b], 160], [xs[b], 300], [730 + b * 70, 300], [730 + b * 70, 327]]);
+            pin3['n' + b] = 'out';
+          }
+          // AND ถอดรหัสเลข 0-9: dN = ผลิตภัณฑ์บิตตามเลขฐานสองของ N (Q3Q2Q1Q0)
+          var PAT = ['0000', '0001', '0010', '0011', '0100', '0101', '0110', '0111', '1000', '1001'];
+          for (var d = 0; d < 10; d++) {
+            sim.addGate('d' + d, 'AND', { x: 760, y: 400 + d * 60, n: 4 });
+            for (var p2 = 0; p2 < 4; p2++) {
+              var src = (PAT[d].charAt(p2) === '1' ? 'ff' : 'n') + (3 - p2);
+              sim.wire(src, pin3[src], 'd' + d, p2,
+                [[xs[3 - p2] + 20, 170 + d * 6], [700, 170 + d * 6], [700, 400 + d * 60 + p2 * 13], [752, 400 + d * 60 + p2 * 13]]);
+            }
+          }
+          // OR รวมเลขที่จุดช่องนั้น (active-high; ตัวจริง 7447 active-low กลับขั้ว) → LED a..g
+          var SEG = DL.SEG_TABLE;
+          var segKeys = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+          segKeys.forEach(function (k, ki) {
+            var on = [];
+            for (var d2 = 0; d2 < 10; d2++) { if (SEG[d2][ki] === 1) on.push(d2); }
+            sim.addGate('or' + k, 'OR', { x: 980, y: 400 + ki * 60, n: on.length });
+            on.forEach(function (d3, pi) {
+              sim.wire('d' + d3, 'out', 'or' + k, pi, [[830, 400 + d3 * 60 + 6], [900 + ki * 10, 400 + d3 * 60 + 6], [900 + ki * 10, 400 + ki * 60 + pi * 13]]);
+            });
+            sim.addOutput(k + 'Led', { x: 1090, y: 400 + ki * 60 + 6, label: k.toUpperCase() });
+            sim.wire('or' + k, 'out', k + 'Led', 'in');
+          });
+
+          /* --- จอ 7 ผ่วน (SEVENSEG) ป้อน BCD ตรงจาก Q3..Q0 เหมือน basics.js/course.js --- */
+          sim.addComponent('seg', 'SEVENSEG', { x: 830, y: 120 });
+          sim.wire('ff3', 'q', 'seg', 'd3', [[725, 100], [750, 100], [750, 66]]);
+          sim.wire('ff2', 'q', 'seg', 'd2', [[700, 115], [760, 115], [760, 84]]);
+          sim.wire('ff1', 'q', 'seg', 'd1', [[675, 130], [770, 130], [770, 102]]);
+          sim.wire('ff0', 'q', 'seg', 'd0', [[725, 145], [780, 145], [780, 120]]);
+          sim.explain('EN=1 แล้วกด Pulse Clock ทีละครั้ง — จอวน 0-9 (mod-10) และไฟ a-g ด้านล่างคือผลถอดรหัสแบบ gate');
+        },
+        steps: ['เปิด EN กด pulse จน Q3Q2Q1Q0 = 0100 (เลข 4) — นับไฟ a-g: ติดแค่ b,c,f,g ตรงข้อ q13', 'ไล่ pulse ต่อ — จอวน 0-9 แล้วกลับ 0 เพราะ AND(Q3,Q1) ยิง CLR ตอนจะเป็น 10 (ตรง q45 ข้อ d)', 'เทียบไฟ a-g กับจอ SEVENSEG ทุกจังหวะ — ตรรกะ decoder จาก gate ต้องได้ลวดลายเดียวกัน'] }
+    ]
+  });
 })();

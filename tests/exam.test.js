@@ -367,6 +367,64 @@ mx.setInput('s', 0); mx.setInput('x', 1);
 pulse(mx, 1);
 eq('q43: กลับ s=0, x=1 pulse → Q=1 อีกครั้ง (mux สลับสายได้)', mx.outputValue('qLed'), 1);
 
+/* ---------- บท exam-7447: 7447 + จอ 7 ผ่วน พร้อม counter (q13, q45) ---------- */
+ok('exam-7447: ลงทะเบียนใน DL.LESSONS', !!DL.LESSONS['exam-7447']);
+ok('exam-7447: group = exam', DL.LESSONS['exam-7447'] && DL.LESSONS['exam-7447'].group === 'exam');
+eq('exam-7447: มี 1 วงจร', DL.LESSONS['exam-7447'] && DL.LESSONS['exam-7447'].circuits.length, 1);
+ok('exam-7447: html อ้างโจทย์ q13 + q45',
+   DL.LESSONS['exam-7447'].html.indexOf('docs/exam/q13.png') >= 0 &&
+   DL.LESSONS['exam-7447'].html.indexOf('docs/exam/q45.png') >= 0);
+ok('exam-7447: html สอน common anode vs common cathode + active-low ของ 7447 + ขา LT/RBI/BIO/RBO',
+   DL.LESSONS['exam-7447'].html.indexOf('common anode') >= 0 &&
+   DL.LESSONS['exam-7447'].html.indexOf('common cathode') >= 0 &&
+   DL.LESSONS['exam-7447'].html.indexOf('active-low') >= 0 &&
+   DL.LESSONS['exam-7447'].html.indexOf('LT') >= 0 &&
+   DL.LESSONS['exam-7447'].html.indexOf('RBI') >= 0);
+ok('exam-7447: summary มีกฎจำ (7447 active-low, counter+จอ, mod-10)',
+   DL.LESSONS['exam-7447'].summary.indexOf('active-low') >= 0 &&
+   DL.LESSONS['exam-7447'].summary.indexOf('mod-10') >= 0);
+
+/* วงจร: decade counter (4×TFF + AND(Q3,Q1)→CLR) → gate decoder → LED a..g + SEVENSEG */
+var s47 = build('exam-7447', 0);
+s47.setInput('en', 1);
+function seg7(s) { return ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map(function (p) { return s.outputValue(p + 'Led'); }); }
+function digit47(s) { return s.nodes['seg'].out._digit; }
+
+ok('q45: decade counter ตาม pattern course.js — 4×TFF ripple (Q̄ ตัวก่อน→CLK ตัวถัด)',
+   s47.nodes['ff1'].opts.clockFrom === 'ff0:qn' && s47.nodes['ff3'].opts.clockFrom === 'ff2:qn');
+ok('q45: AND(Q3,Q1) → CLR ทุก FF (mod-10)',
+   s47.wires.some(function (w) { return w.from.id === 'clr1' && w.to.id === 'ff0' && w.to.pin === 'clr'; }) &&
+   s47.wires.some(function (w) { return w.from.id === 'clr1' && w.to.id === 'ff3' && w.to.pin === 'clr'; }) &&
+   s47.wires.some(function (w) { return w.from.id === 'ff3' && w.from.pin === 'q' && w.to.id === 'clr1'; }) &&
+   s47.wires.some(function (w) { return w.from.id === 'ff1' && w.from.pin === 'q' && w.to.id === 'clr1'; }));
+ok('q13: SEVENSEG ถูกป้อน BCD จาก Q3..Q0 (เหมือน basics.js/course.js)',
+   s47.wires.some(function (w) { return w.from.id === 'ff3' && w.from.pin === 'q' && w.to.id === 'seg' && w.to.pin === 'd3'; }) &&
+   s47.wires.some(function (w) { return w.from.id === 'ff0' && w.from.pin === 'q' && w.to.id === 'seg' && w.to.pin === 'd0'; }));
+ok('q13: decoder ประกอบจาก gate — NOT กลับบิต BCD + AND ถอดรหัสเลข 0-9 + OR รวมเข้า segment a..g',
+   s47.wires.some(function (w) { return w.from.id === 'ff0' && w.from.pin === 'q' && w.to.id === 'n0'; }) &&
+   s47.wires.some(function (w) { return w.from.id === 'd0' && w.from.pin === 'out' && w.to.id === 'ora'; }) &&
+   s47.wires.some(function (w) { return w.from.id === 'ora' && w.from.pin === 'out' && w.to.id === 'aLed'; }));
+
+/* อ้างอิงรูปเลข 4 จาก decoder ของ basics.js เอง (บท decoder — วงจร BCD→7-Segment) */
+var ref = new DL.CircuitSim();
+DL.LESSONS['decoder'].circuits[1].build(ref);
+ref.setInput('d3', 0); ref.setInput('d2', 1); ref.setInput('d1', 0); ref.setInput('d0', 0);   // 0100 = 4
+var want4 = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map(function (p) { return ref.nodes['seg'].out[p]; });
+eq('q13: pattern อ้างอิงเลข 4 จาก basics.js (b,c,f,g)', want4, [0, 1, 1, 0, 0, 1, 1]);
+
+/* บังคับตัวนับ = 4 (pulse 4 ครั้งจาก 0) แล้วเทียบ segment ทั้ง 7 เส้นกับ decoder ของ basics.js */
+eq('q45: เริ่ม 0 — จอโชว์ 0', digit47(s47), 0);
+pulse(s47, 4);
+eq('q45: pulse 4 ครั้ง → ตัวนับ = 4', digit47(s47), 4);
+eq('q13: BCD 0100 → segment ของ decoder ตรงกับ basics.js ทุกเส้น (a..g)', seg7(s47), want4);
+ok('q13: จอแสดง 4 (ตอบข้อสอบ q13 ข้อ c. 0100)', digit47(s47) === 4);
+
+/* steps: ไล่ pulse ต่อจาก 4 — จอตามตัวนับทุกจังหวะ 9→0 วน (mod-10) ไม่ค้าง 10-15 */
+var walk = [];
+for (var w47 = 0; w47 < 12; w47++) { pulse(s47, 1); walk.push(digit47(s47)); }
+eq('q45: pulse ต่อจาก 4 → 5,6,7,8,9 แล้ววนกลับ 0,1,2,3,4,5 (mod-10 — จอตามตัวนับทุกจังหวะ)', walk, [5,6,7,8,9,0,1,2,3,4,5,6]);
+ok('q45: หลัง 9 → กลับ 0 ทันที (ไม่มี 10-15 ค้าง)', walk[4] === 9 && walk[5] === 0);
+
 /* ---------- สรุป ---------- */
 console.log('ผลทดสอบ exam.test.js: ' + pass + ' ผ่าน, ' + fail + ' พลาด');
 console.log(names.join('\n'));
