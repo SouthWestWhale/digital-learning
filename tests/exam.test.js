@@ -110,6 +110,68 @@ ok('7476: ff0 J รับ din ตรง, K ผ่าน NOT (7404 ตามร�
    sr.wires.some(function (w) { return w.from.id === 'din' && w.from.pin === 'out' && w.to.id === 'ff0' && w.to.pin === 'j'; }) &&
    sr.wires.some(function (w) { return w.from.id === 'not0' && w.from.pin === 'out' && w.to.id === 'ff0' && w.to.pin === 'k'; }));
 
+/* ---------- บท exam-modn: Johnson counter (q38) + mod-6 async clear (q41) ---------- */
+ok('exam-modn: ลงทะเบียนใน DL.LESSONS', !!DL.LESSONS['exam-modn']);
+ok('exam-modn: group = exam', DL.LESSONS['exam-modn'] && DL.LESSONS['exam-modn'].group === 'exam');
+eq('exam-modn: มี 2 วงจร', DL.LESSONS['exam-modn'] && DL.LESSONS['exam-modn'].circuits.length, 2);
+ok('exam-modn: html อ้างโจทย์ q38 + q41',
+   DL.LESSONS['exam-modn'].html.indexOf('docs/exam/q38.png') >= 0 &&
+   DL.LESSONS['exam-modn'].html.indexOf('docs/exam/q41.png') >= 0);
+ok('exam-modn: html สอน 3 สูตร (cascade คูณ, 2^n≥N, excitation JK)',
+   DL.LESSONS['exam-modn'].html.indexOf('5 × 5') >= 0 &&
+   DL.LESSONS['exam-modn'].html.indexOf('273') >= 0 &&
+   DL.LESSONS['exam-modn'].html.indexOf('9 ตัว') >= 0 &&
+   DL.LESSONS['exam-modn'].html.indexOf('J=K=1') >= 0);
+
+/* วงจร 1: Johnson 4×DFF — d0←qn3, d1←q0, d2←q1, d3←q2, CLK รวม */
+var jh = build('exam-modn', 0);
+function johnState(s) {
+  return [s.nodes['ff3'].state.q, s.nodes['ff2'].state.q, s.nodes['ff1'].state.q, s.nodes['ff0'].state.q];
+}
+ok('q38: d0 ต่อจาก qn3 (twisted feedback)',
+   jh.wires.some(function (w) { return w.from.id === 'ff3' && w.from.pin === 'qn' && w.to.id === 'ff0' && w.to.pin === 'd'; }));
+ok('q38: d1←q0, d2←q1, d3←q2',
+   jh.wires.some(function (w) { return w.from.id === 'ff0' && w.from.pin === 'q' && w.to.id === 'ff1' && w.to.pin === 'd'; }) &&
+   jh.wires.some(function (w) { return w.from.id === 'ff1' && w.from.pin === 'q' && w.to.id === 'ff2' && w.to.pin === 'd'; }) &&
+   jh.wires.some(function (w) { return w.from.id === 'ff2' && w.from.pin === 'q' && w.to.id === 'ff3' && w.to.pin === 'd'; }));
+ok('q38: ทุก DFF เป็น primary clock (CLK รวม)',
+   ['ff0', 'ff1', 'ff2', 'ff3'].every(function (id) { return !jh.nodes[id].opts.clockFrom; }));
+
+var initJohn = johnState(jh);
+eq('q38: เริ่ม 0000', initJohn, [0, 0, 0, 0]);
+var seen = [initJohn.join('')];
+for (var p = 1; p <= 8; p++) {
+  pulse(jh, 1);
+  seen.push(johnState(jh).join(''));
+}
+var uniq = {};
+seen.forEach(function (s) { uniq[s] = 1; });
+eq('q38: 8 สถานะไม่ซ้ำ (8 distinct states)', Object.keys(uniq).length, 8);
+eq('q38: pulse ครบ 8 → กลับสถานะเริ่มต้น', johnState(jh), initJohn);
+
+/* วงจร 2: mod-6 3×TFF + AND(q2,q1) → clr ทุกตัว */
+var m6 = build('exam-modn', 1);
+m6.setInput('en', 1);
+function m6val(s) {
+  return s.nodes['ff2'].state.q * 4 + s.nodes['ff1'].state.q * 2 + s.nodes['ff0'].state.q;
+}
+eq('q41: เริ่ม 0', m6val(m6), 0);
+ok('q41: AND รับ q2,q1 → clr ของทุก TFF',
+   m6.wires.some(function (w) { return w.from.id === 'and1' && w.from.pin === 'out' && w.to.id === 'ff0' && w.to.pin === 'clr'; }) &&
+   m6.wires.some(function (w) { return w.from.id === 'and1' && w.from.pin === 'out' && w.to.id === 'ff2' && w.to.pin === 'clr'; }) &&
+   m6.wires.some(function (w) { return w.from.id === 'ff2' && w.from.pin === 'q' && w.to.id === 'and1'; }) &&
+   m6.wires.some(function (w) { return w.from.id === 'ff1' && w.from.pin === 'q' && w.to.id === 'and1'; }));
+var seq6 = [0];
+var neverBad = true;
+for (var q = 0; q < 12; q++) {
+  pulse(m6, 1);
+  var v = m6val(m6);
+  seq6.push(v);
+  if (v === 6 || v === 7) neverBad = false;
+}
+ok('q41: 12 pulse ไม่เคยเป็น 6 หรือ 7', neverBad);
+eq('q41: วน 0..5 ซ้ำ 2 รอบครบ', seq6, [0,1,2,3,4,5,0,1,2,3,4,5,0]);
+
 /* ---------- สรุป ---------- */
 console.log('ผลทดสอบ exam.test.js: ' + pass + ' ผ่าน, ' + fail + ' พลาด');
 console.log(names.join('\n'));
