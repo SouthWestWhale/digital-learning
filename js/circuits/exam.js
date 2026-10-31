@@ -398,4 +398,97 @@
         steps: ['เปิด T0=1 แล้วกด Pulse Clock 1 ครั้ง — Q0 ติด = 01 (1)', 'กดครั้งที่ 2 — Q0 ดับและตอนนั้น Q0=1 อยู่ จึงดึงให้ Q1 toggle ด้วย = 10 (2)', 'กดครบ 4 ครั้ง — อ่าน 2Q1+Q0: 0 → 1 → 2 → 3 แล้วกดครั้งที่ 5 วนกลับ 0 = นับขึ้น mod-4 ตรงเฉลย q39'] }
     ]
   });
+
+  /* ================= บท: Shift ข้อมูลผ่านวงจร + UART (q18, q34, q50) ================= */
+  DL.registerLesson({
+    id: 'exam-shift',
+    group: 'exam',
+    title: 'Shift Register — ดูบิตไหลผ่านวงจรทีละ pulse + UART',
+    subtitle: 'q18 · q34 · q50 — 1 pulse = เลื่อน 1 บิต, บิตเข้าก่อนออกก่อน (FIFO), บิตออกทางตัวสุดท้าย (serial out)',
+    html:
+      '<h2>Shift Register = FF ต่ออนุกรม — 1 pulse เลื่อน 1 บิต</h2>' +
+      '<p><b>Shift register</b> คือ FF หลายตัวต่อกันเป็นสาย: D ของตัวถัดไปรับ Q ของตัวก่อนหน้า ' +
+      'และทุกตัวใช้ <b>Clock รวมสายเดียว</b> — ทุกครั้งที่มี 1 pulse ข้อมูลจะ <b>เลื่อนไปข้างหน้า 1 ขั้นพอดี</b> ' +
+      'บิตใหม่เข้าที่ตัวแรก (D0) และบิตเก่าถูก "ดัน" ออกที่ตัวสุดท้าย (Q3 = <b>serial out</b>) ' +
+      'กฎเดียวที่ต้องจำ: <b>บิตเข้าก่อน = เดินไกลสุด = ออกก่อน (FIFO)</b></p>' +
+
+      '<h2>โจทย์ q18 — ป้อน 1100 แล้วอ่านบิตที่ "ออก" ทาง serial out</h2>' +
+      '<div class="doc-card"><img src="docs/exam/q18.png" alt="โจทย์ q18 — 4-bit shift right register" style="max-width:520px;width:100%;border-radius:6px">' +
+      '<p>ข้อสอบ: วงจร shift (right) register 4-bit serial-in/serial-out เคลียร์เป็น 0000 แล้วรับบิต ' +
+      '<b>1, 1, 0, 0</b> (เรียงตามลำดับ pulse) — ถามว่า register มีค่าเป็นอะไร ' +
+      'จากรูป บิตเข้าทาง <b>D</b> (ข้างซ้ายสุด) แล้วเลื่อนขวา D→C→B→A ทุก pulse ' +
+      'ตาราง trace จึงเดินแบบนี้: pulse 1 → 1000, pulse 2 → 1100, pulse 3 → 0110, pulse 4 → <b>0011</b> ตรงเฉลยข้อ a ' +
+      'อ่านให้เข้าใจ: หลังรับครบ 4 บิต register เก็บ "4 บิตล่าสุด" เรียงจาก <b>บิตใหม่สุดที่ D → บิตเก่าสุดที่ A</b> ' +
+      '(บิต 1 ตัวแรกเดินไกลสุดไปอยู่ที่ A) และเมื่อคล็อกต่อไป (din=0) บิตเก่าจะถูกดัน <b>หลุดออกทาง A (serial out)</b> — ' +
+      'ค่าที่ A หลัง pulse ที่ 4, 5, 6, 7 จะเรียงเป็น <b>1, 1, 0, 0</b> พอดีลำดับที่ป้อนเข้า ' +
+      'นี่คือการอ่านให้เป็นว่า <b>บิตไหนออกเมื่อไหร่</b> (เข้าก่อน = ออกก่อน FIFO)</p></div>' +
+
+      '<h2>โจทย์ q34 — trace JK ต่อ D-FF ทีละคล็อก</h2>' +
+      '<div class="doc-card"><img src="docs/exam/q34.png" alt="โจทย์ q34 — JK ต่อ D-FF trace 3 คล็อก" style="max-width:520px;width:100%;border-radius:6px">' +
+      '<p>โจทย์ให้ input I ต่อเข้า <b>J และ K พร้อมกัน</b> (I=1 → JK toggle ทุกคล็อก) แล้วเอา P (ขา Q ของ JK) ไปต่อ D ของ D-FF ตัวถัดไป ได้ Q ' +
+      'เริ่มที่ P=0, Q=1 แล้วคล็อก 3 ครั้ง (I=1 ตลอด):</p>' +
+      '<table border="1" cellpadding="6" style="border-collapse:collapse;margin:8px 0">' +
+      '<tr><th>คล็อก</th><th>P (JK toggle)</th><th>Q (ตาม P ของคล็อก "ก่อนหน้า"!)</th></tr>' +
+      '<tr><td>Start</td><td>0</td><td>1</td></tr>' +
+      '<tr><td>P₁</td><td>1</td><td>0 (ลอก P ตอน Start)</td></tr>' +
+      '<tr><td>P₂</td><td>0</td><td>1 (ลอก P ตอน P₁)</td></tr>' +
+      '<tr><td>P₃</td><td>1</td><td>0 (ลอก P ตอน P₂)</td></tr>' +
+      '</table>' +
+      '<p>หลัง 3 คล็อก P,Q = <b>1, 0</b> — กุญแจสำคัญ: <b>D-FF ลอกค่า D จาก "ก่อนขอบคล็อก"</b> เสมอ ' +
+      'ดังนั้น Q จะตามหลัง P ไป 1 คล็อก (เหมือน shift register 2 ขั้นนั่นเอง) อย่าเผลอให้ Q ก๊อป P "พร้อมกัน" ทุกคล็อก!</p></div>' +
+
+      '<h2>โจทย์ q50 — บล็อกของ UART</h2>' +
+      '<div class="doc-card"><img src="docs/exam/q50.png" alt="โจทย์ q50 — บล็อกของ UART" style="max-width:520px;width:100%;border-radius:6px">' +
+      '<p>UART สื่อสารแบบ <b>อนุกรม (ทีละบิต)</b> จึงต้องมีตัวแปลงขนาน↔อนุกรม 2 ฝั่ง:</p>' +
+      '<ul>' +
+      '<li><b>Transmitter (ฝั่งส่ง)</b> = <b>parallel-in/serial-out</b> (PISO) — รับข้อมูล 8 บิตพร้อมกัน แล้วส่งออกทีละบิต</li>' +
+      '<li><b>Receiver (ฝั่งรับ)</b> = <b>serial-in/parallel-out</b> (SIPO) — รับบิตทีละบิต แล้วคืนเป็น 8 บิตพร้อมกัน</li>' +
+      '</ul>' +
+      '<p>ข้อที่ <b>"ไม่ใช่" บล็อกของ UART</b> คือ <b>Receiver แบบ parallel-in/serial-out</b> — มันกลับด้านผิด! ' +
+      '(parallel-in/serial-out คือฝั่ง Transmitter ไม่ใช่ Receiver) เชื่อมกับบทเรียนวงจร shift register SIPO ที่เรียนไว้: SIPO คือ Receiver, PISO คือ Transmitter</p></div>',
+
+    summary:
+      '<ul>' +
+      '<li><b>1 pulse = เลื่อน 1 บิต</b> — FF ต่อ Q→D ตัวถัดไป + Clock รวม บิตใหม่เข้า D0 บิตเก่าออกที่ Q ตัวสุดท้าย (serial out)</li>' +
+      '<li><b>บิตเข้าก่อน = ออกก่อน (FIFO)</b> — q18: บิตเข้าที่ D เลื่อนขวา D→C→B→A, ป้อน 1,1,0,0 ครบ 4 pulse อ่าน D C B A = <b>0011</b> (เฉลยข้อ a); ค่าที่ A (serial out) หลัง pulse 4-7 เรียง 1,1,0,0 พอดีที่ป้อนเข้า</li>' +
+      '<li>q34: JK (J=K=I) toggle → P, D-FF ลอก P <b>ของคล็อกก่อนหน้า</b> → Q ตามหลัง P 1 คล็อก — Start (0,1) คล็อก 3 ครั้ง (I=1) → P,Q = 1,0 (ข้อ b)</li>' +
+      '<li>UART: <b>Tx = PISO (parallel-in/serial-out), Rx = SIPO (serial-in/parallel-out)</b> — ข้อไหนสลับฝั่งผิด (Receiver แบบ parallel-in/serial-out) = ไม่ใช่บล็อกของ UART (q50)</li>' +
+      '</ul>',
+    circuits: [
+      { title: 'โจทย์ q18: 4×DFF Shift-Right (serial-in/serial-out) — บิตเข้าที่ D เลื่อนขวา D→C→B→A ออกทาง A ทีละ pulse',
+        build: function (sim) {
+          sim.addInput('din', { x: 60, y: 130, label: 'Din (บิตเข้าทีละ pulse)' });
+          var xs = [300, 490, 680, 870];
+          // เรียงซ้าย→ขวาตามรูปข้อสอบ: D C B A — บิตเข้าที่ D (ff3) แล้วเลื่อนขวาไหลออกที่ A (ff0)
+          var ids = ['ff3', 'ff2', 'ff1', 'ff0'];
+          var labels = ['D', 'C', 'B', 'A (out serial)'];
+          for (var i = 0; i < 4; i++) {
+            // ทุกตัวเป็น primary clock (ไม่มี clockFrom) — Pulse Clock หนึ่งครั้งเลื่อนทั้งสายพร้อมกัน
+            sim.addComponent(ids[i], 'DFF', { x: xs[i], y: 110 });
+            sim.addOutput(ledIds(i), { x: xs[i], y: 220, label: labels[i] });
+            if (i === 0) sim.wire('din', 'out', 'ff3', 'd', [[160, 130], [220, 130], [220, 92]]);
+            else sim.wire(ids[i - 1], 'q', ids[i], 'd', [[xs[i - 1] + 45, 92], [xs[i] - 45, 92]]);
+            sim.wire(ids[i], 'q', ledIds(i), 'in');
+          }
+          function ledIds(k) { return ['dLed', 'cLed', 'bLed', 'outLed'][k]; }
+          sim.explain('Shift ขวา 1 บิตต่อ pulse (ตามรูปข้อสอบ): Din → D → C → B → A — ป้อน 1,1,0,0 ครบ 4 pulse แล้วอ่าน D C B A = 0011 (บิต 1 ตัวแรกเดินไกลสุดไป A, บิตใหม่สุดอยู่ D) จากนั้นปล่อย Din=0 แล้วกดต่อ — ไฟที่ LED "A (out serial)" จะกระพริบตามลำดับบิตที่ป้อนเข้า 1,1,0,0 = บิตเข้าก่อนออกก่อน (FIFO)');
+        },
+        steps: ['ป้อน Din=1 แล้วกด Pulse Clock 2 ครั้ง — ดูบิต 1 วิ่งจาก D ไป C (เลื่อนขวาขั้นละ 1 pulse)', 'ป้อนลำดับ 1,1,0,0 ให้ครบ 4 pulse — อ่าน D C B A = 0011 ตรงเฉลย q18 ข้อ a (register เก็บ 4 บิตล่าสุด บิตเก่าสุดอยู่ A และกำลังจะหลุดออก)', 'ปล่อย Din=0 แล้วกดต่ออีก 3 pulse — จับตา LED A (out serial): ตอน pulse 4-7 มันแสดง 1,1,0,0 พอดีลำดับที่ป้อนเข้า = บิตออกทางอนุกรมเข้าก่อนออกก่อน แล้ว register กลับเป็น 0000'] },
+      { title: 'โจทย์ q34: JK (J=K=I) → P → D-FF → Q — trace 3 คล็อก: Q ตามหลัง P ทีละคล็อก',
+        build: function (sim) {
+          sim.addInput('i', { x: 60, y: 150, label: 'I (ต่อ J=K)' });
+          sim.addComponent('jk', 'JKFF', { x: 320, y: 130 });
+          sim.addComponent('dff', 'DFF', { x: 560, y: 130 });
+          sim.addOutput('pLed', { x: 320, y: 240, label: 'P' });
+          sim.addOutput('qLed', { x: 560, y: 240, label: 'Q' });
+          sim.wire('i', 'out', 'jk', 'j', [[160, 150], [220, 150], [220, 94]]);
+          sim.wire('i', 'out', 'jk', 'k', [[190, 150], [250, 150], [250, 112]]);
+          sim.wire('jk', 'q', 'dff', 'd', [[385, 112], [470, 112], [470, 112]]);
+          sim.wire('jk', 'q', 'pLed', 'in');
+          sim.wire('dff', 'q', 'qLed', 'in');
+          sim.explain('I=1 → J=K=1 → P toggle ทุกคล็อก ส่วน Q ลอก P "ก่อนขอบคล็อก" จึงตามหลัง P ไป 1 คล็อกเสมอ — Start (P,Q)=(0,1) แล้วคล็อก 3 ครั้ง (I=1): P₁=(1,0) P₂=(0,1) P₃=(1,0) ตอบ P,Q = 1,0 ตรงเฉลย q34 ข้อ b');
+        },
+        steps: ['เปิด I=1 (J=K=1 = toggle mode) แล้วกด Pulse Clock — เห็น P สลับทุกคล็อก แต่ Q สลับ "ช้ากว่า 1 จังหวะ"', 'ใช้ปุ่ม ↺ รีเซ็ตแล้วคล็อกใหม่ นับพร้อมตาราง: Start (0,1) → P₁ (1,0) → P₂ (0,1) → P₃ (1,0)', 'สรุป: หลัง 3 คล็อก P,Q = 1,0 (ข้อ b) — จำไว้ว่า D-FF ใช้ค่า D "ก่อนขอบคล็อก" Q จึงเหมือนบิตที่ถูกเลื่อนไป 1 ขั้น'] }
+    ]
+  });
 })();

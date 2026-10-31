@@ -261,6 +261,65 @@ var seqUp = [0];
 for (var up = 1; up <= 5; up++) { pulse(upc, 1); seqUp.push(uval(upc)); }
 eq('q39: นับขึ้น 1,2,3,0 แล้ววนกลับ 1 (mod-4)', seqUp.slice(1), [1,2,3,0,1]);
 
+/* ---------- บท exam-shift: Shift ข้อมูลผ่านวงจร + UART (q18, q34, q50) ---------- */
+ok('exam-shift: ลงทะเบียนใน DL.LESSONS', !!DL.LESSONS['exam-shift']);
+ok('exam-shift: group = exam', DL.LESSONS['exam-shift'] && DL.LESSONS['exam-shift'].group === 'exam');
+eq('exam-shift: มี 2 วงจร', DL.LESSONS['exam-shift'] && DL.LESSONS['exam-shift'].circuits.length, 2);
+ok('exam-shift: html อ้างโจทย์ q18 + q34 + q50',
+   DL.LESSONS['exam-shift'].html.indexOf('docs/exam/q18.png') >= 0 &&
+   DL.LESSONS['exam-shift'].html.indexOf('docs/exam/q34.png') >= 0 &&
+   DL.LESSONS['exam-shift'].html.indexOf('docs/exam/q50.png') >= 0);
+ok('exam-shift: html สอน UART — Tx = parallel-in/serial-out (PISO), Rx = serial-in/parallel-out (SIPO)',
+   DL.LESSONS['exam-shift'].html.indexOf('parallel-in/serial-out') >= 0 &&
+   DL.LESSONS['exam-shift'].html.indexOf('serial-in/parallel-out') >= 0);
+ok('exam-shift: html ไม่ซ้ำ framing ของ exam-7476 (ไม่สอน "7476" ซ้ำ — เน้นดูบิตไหลออก serial)',
+   DL.LESSONS['exam-shift'].html.indexOf('7476') < 0 &&
+   DL.LESSONS['exam-shift'].html.indexOf('serial-out') >= 0);
+ok('exam-shift: summary มีกฎจำ (1 pulse = เลื่อน 1 บิต, FIFO, UART Tx=PISO/Rx=SIPO)',
+   DL.LESSONS['exam-shift'].summary.indexOf('เลื่อน 1 บิต') >= 0 &&
+   DL.LESSONS['exam-shift'].summary.indexOf('ออกก่อน') >= 0 &&
+   DL.LESSONS['exam-shift'].summary.indexOf('PISO') >= 0 &&
+   DL.LESSONS['exam-shift'].summary.indexOf('SIPO') >= 0);
+
+/* วงจร 1: q18 — 4×DFF shift ขวาตามรูปข้อสอบ (din→q3/D, เลื่อน D→C→B→A, บิตออกที่ q0/A)
+ * ทิศยืนยันจากภาพ q18: header "in: D C B A" + ตาราง P1=1000, P2=1100, P3=0110, P4=0011 + เฉลย ข้อ a = 0011 */
+var sr = build('exam-shift', 0);
+ok('q18: ใช้ DFF 4 ตัว เป็น primary clock ทั้งหมด (CLK รวม)',
+   ['ff0', 'ff1', 'ff2', 'ff3'].every(function (id) {
+     return sr.nodes[id] && sr.nodes[id].comp === 'DFF' && !sr.nodes[id].opts.clockFrom;
+   }));
+ok('q18: สายตามรูปข้อสอบ — din→ff3.d (D), ff3.q→ff2.d, ff2.q→ff1.d, ff1.q→ff0.d, ff0.q→out (serial ที่ A)',
+   sr.wires.some(function (w) { return w.from.id === 'din' && w.to.id === 'ff3' && w.to.pin === 'd'; }) &&
+   sr.wires.some(function (w) { return w.from.id === 'ff3' && w.from.pin === 'q' && w.to.id === 'ff2' && w.to.pin === 'd'; }) &&
+   sr.wires.some(function (w) { return w.from.id === 'ff2' && w.from.pin === 'q' && w.to.id === 'ff1' && w.to.pin === 'd'; }) &&
+   sr.wires.some(function (w) { return w.from.id === 'ff1' && w.from.pin === 'q' && w.to.id === 'ff0' && w.to.pin === 'd'; }) &&
+   sr.wires.some(function (w) { return w.from.id === 'ff0' && w.from.pin === 'q' && w.to.id === 'outLed' && w.to.pin === 'in'; }));
+function qall(s) { return ['ff3', 'ff2', 'ff1', 'ff0'].map(function (id) { return s.nodes[id].state.q; }); }
+eq('q18: เริ่ม 0000', qall(sr), [0, 0, 0, 0]);
+var feed = [1, 1, 0, 0];
+for (var fp = 0; fp < 4; fp++) { sr.setInput('din', feed[fp]); pulse(sr, 1); }
+eq('q18: หลัง pulse ครบ 4 (din = 1,1,0,0): D C B A = [q3,q2,q1,q0] = [0,0,1,1] = 0011 (ตรงเฉลยข้อสอบ q18 ข้อ a)', qall(sr), [0, 0, 1, 1]);
+var exitStream = [sr.nodes['ff0'].state.q];   // บิตที่ 1 อยู่ที่ A แล้วตอนจบ pulse 4 กำลังจะหลุดออก
+for (var ep = 5; ep <= 7; ep++) { sr.setInput('din', 0); pulse(sr, 1); exitStream.push(sr.nodes['ff0'].state.q); }
+eq('q18: บิตออกทาง A (serial out) หลัง pulse 4,5,6,7 = 1,1,0,0 (ตรงลำดับที่ป้อนเข้า — เข้าก่อนออกก่อน FIFO)', exitStream, [1, 1, 0, 0]);
+eq('q18: คล็อก 0 ต่อจนครบ 7 pulse → register กลับว่าง = 0000', qall(sr), [0, 0, 0, 0]);
+
+/* วงจร 2: q34 — JK (J=K=I) → P, P → D-FF → Q — trace 3 คล็อกจาก Start P=0,Q=1 */
+var tq = build('exam-shift', 1);
+ok('q34: วงจรตามรูป — input I ต่อ J และ K ของ JK, P (JK.q) → D ของ DFF, CLK รวม primary',
+   tq.wires.some(function (w) { return w.from.id === 'i' && w.to.id === 'jk' && w.to.pin === 'j'; }) &&
+   tq.wires.some(function (w) { return w.from.id === 'i' && w.to.id === 'jk' && w.to.pin === 'k'; }) &&
+   tq.wires.some(function (w) { return w.from.id === 'jk' && w.from.pin === 'q' && w.to.id === 'dff' && w.to.pin === 'd'; }) &&
+   !tq.nodes['jk'].opts.clockFrom && !tq.nodes['dff'].opts.clockFrom);
+tq.setInput('i', 1);
+pulse(tq, 2);   // ตั้ง initial state ให้ตรง Start ในภาพข้อสอบ: P=0, Q=1
+function pq(s) { return [s.nodes['jk'].state.q, s.nodes['dff'].state.q]; }
+eq('q34: ตั้ง Start ให้ตรงภาพข้อสอบ: P=0, Q=1', pq(tq), [0, 1]);
+var trace = [];
+for (var tp = 1; tp <= 3; tp++) { pulse(tq, 1); trace.push(pq(tq)); }
+eq('q34: trace 3 คล็อก (I=1): P1=(1,0), P2=(0,1), P3=(1,0) — Q ตาม P ของคล็อกก่อนหน้าเสมอ', trace, [[1, 0], [0, 1], [1, 0]]);
+eq('q34: หลัง 3 คล็อก P,Q = 1,0 (ตรงเฉลยข้อสอบ q34 ข้อ b)', pq(tq), [1, 0]);
+
 /* ---------- สรุป ---------- */
 console.log('ผลทดสอบ exam.test.js: ' + pass + ' ผ่าน, ' + fail + ' พลาด');
 console.log(names.join('\n'));
